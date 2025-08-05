@@ -1,0 +1,18 @@
+[Unit]
+Description=Patroni High availability PostgreSQL Cluster
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+ConditionPathExists=/var/lib/postgresql/patroni/patroni.yml
+ExecStart=/var/lib/postgresql/patroni/venv/bin/patroni /var/lib/postgresql/patroni/patroni.yml
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=process
+TimeoutSec=30
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Genesis Database PG agent
+After=network-online.target
+
+[Service]
+TimeoutStopSec=5
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGINT
+ExecStartPre=/bin/sleep 2
+ExecStart=genesis-db-pg-agent --config-file /etc/genesis_db/genesis_pg_agent.conf
+
+[Install]
+WantedBy=multi-user.target

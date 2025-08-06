@@ -108,7 +108,7 @@ class PGRole(
 
 
 # TODO: actually it's a role model for PG, may not be suited well for other DBs
-class PGPrivilege(enum.Enum):
+class PGPrivilege(str, enum.Enum):
     ALL = "ALL"
     SELECT = "SELECT"
     INSERT = "INSERT"

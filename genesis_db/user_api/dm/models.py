@@ -20,6 +20,7 @@ from restalchemy.dm import models
 from restalchemy.dm import properties
 from restalchemy.dm import relationships
 from restalchemy.dm import types
+from restalchemy.dm import types_dynamic
 from restalchemy.storage.sql import orm
 
 
@@ -57,9 +58,15 @@ class PGInstance(
     )
     cpu = properties.property(types.Integer(min_value=1, max_value=128))
     ram = properties.property(types.Integer(min_value=512, max_value=1024**3))
-    disk_size = properties.property(types.Integer(min_value=1, max_value=1024**3))
-    nodes_number = properties.property(types.Integer(min_value=1, max_value=16))
-    sync_replica_number = properties.property(types.Integer(min_value=0, max_value=15))
+    disk_size = properties.property(
+        types.Integer(min_value=1, max_value=1024**3)
+    )
+    nodes_number = properties.property(
+        types.Integer(min_value=1, max_value=16)
+    )
+    sync_replica_number = properties.property(
+        types.Integer(min_value=0, max_value=15)
+    )
     version = relationships.relationship(PGVersion, required=True)
 
 
@@ -81,7 +88,6 @@ class PGDatabase(
 #     database = relationships.relationship(Database, required=True)
 
 
-
 class PGUser(
     models.ModelWithUUID,
     models.ModelWithNameDesc,
@@ -93,18 +99,6 @@ class PGUser(
     name = properties.property(types.String(min_length=1, max_length=64))
     password = properties.property(types.String(min_length=8, max_length=256))
     instance = relationships.relationship(PGInstance, required=True)
-
-class PGRole(
-    models.ModelWithUUID,
-    models.ModelWithNameDesc,
-    models.ModelWithProject,
-    models.ModelWithTimestamp,
-    orm.SQLStorableMixin,
-):
-
-    __tablename__ = "postgres_roles"
-
-    name = properties.property(types.String(min_length=1, max_length=255))
 
 
 # TODO: actually it's a role model for PG, may not be suited well for other DBs
@@ -123,17 +117,31 @@ class PGPrivilege(str, enum.Enum):
     USAGE = "USAGE"
 
 
-class PGRolePrivilege(
+class PGEntity(enum.Enum):
+    DATABASE = "DATABASE"
+
+
+class DatabaseEntity(types_dynamic.AbstractKindModel):
+    KIND = "DATABASE"
+
+    entity = relationships.relationship(PGDatabase, required=True)
+    privileges = properties.property(
+        types.TypedList(types.Enum([v.value for v in PGPrivilege])),
+        default=[PGPrivilege.ALL.value],
+    )
+
+
+class PGUserPrivilege(
     models.ModelWithUUID,
-    models.ModelWithNameDesc,
-    models.ModelWithProject,
     models.ModelWithTimestamp,
     orm.SQLStorableMixin,
 ):
 
-    __tablename__ = "postgres_role_privileges"
-    role = relationships.relationship(PGRole, required=True)
-    privilege = properties.property(
-        types.Enum([v.value for v in PGPrivilege]),
-        default=PGPrivilege.ALL.value,
+    __tablename__ = "postgres_user_privileges"
+    user = relationships.relationship(PGUser, required=True)
+    entity = properties.property(
+        types_dynamic.KindModelSelectorType(
+            types_dynamic.KindModelType(DatabaseEntity),
+        ),
+        required=True,
     )

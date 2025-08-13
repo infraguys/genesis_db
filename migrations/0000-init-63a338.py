@@ -42,7 +42,8 @@ CREATE TABLE postgres_versions (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
-""", """\
+""",
+            """\
 CREATE TABLE postgres_instances (
     uuid UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -59,7 +60,8 @@ CREATE TABLE postgres_instances (
     updated_at TIMESTAMP NOT NULL,
     FOREIGN KEY (version) REFERENCES postgres_versions(uuid)
 );
-""", """\
+""",
+            """\
 CREATE TABLE postgres_databases (
     uuid UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -69,7 +71,8 @@ CREATE TABLE postgres_databases (
     instance UUID NOT NULL,
     FOREIGN KEY (instance) REFERENCES postgres_instances(uuid)
 );
-""", """\
+""",
+            """\
 CREATE TABLE postgres_users (
     uuid UUID PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
@@ -81,29 +84,16 @@ CREATE TABLE postgres_users (
     FOREIGN KEY (instance) REFERENCES postgres_instances(uuid)
 );
 """,
-# """\
-# CREATE TABLE postgres_roles (
-#     uuid UUID PRIMARY KEY,
-#     name VARCHAR(255) NOT NULL,
-#     description TEXT,
-#     project_id UUID NOT NULL,
-#     created_at TIMESTAMP NOT NULL,
-#     updated_at TIMESTAMP NOT NULL
-# );
-# """, """\
-# CREATE TYPE postgres_privilege AS ENUM ('ALL', 'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'RULE', 'REFERENCES', 'TRIGGER', 'CREATE', 'TEMPORARY', 'EXECUTE', 'USAGE');
-# """,
-# """\
-# CREATE TABLE postgres_role_privileges (
-#     id UUID PRIMARY KEY,
-#     role UUID NOT NULL,
-#     privilege postgres_privilege NOT NULL DEFAULT 'ALL',
-#     created_at TIMESTAMP NOT NULL,
-#     updated_at TIMESTAMP NOT NULL,
-#     FOREIGN KEY (role) REFERENCES postgres_roles(uuid)
-# );
-# """,
-
+            """\
+CREATE TABLE postgres_user_privileges (
+    uuid UUID PRIMARY KEY,
+    "user" UUID NOT NULL,
+    entity JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    FOREIGN KEY ("user") REFERENCES postgres_users(uuid)
+);
+""",
         ]
 
         for expression in expressions:
@@ -111,18 +101,16 @@ CREATE TABLE postgres_users (
 
     def downgrade(self, session):
 
-        tables = [#"postgres_role_privileges", "postgres_roles",
-                  "postgres_users", "postgres_databases", "postgres_instances", "postgres_versions"]
+        tables = [
+            "postgres_user_privileges",
+            "postgres_users",
+            "postgres_databases",
+            "postgres_instances",
+            "postgres_versions",
+        ]
 
         for table in tables:
             self._delete_table_if_exists(session, table)
-
-#         expressions = [ """\
-# DROP type postgres_privilege;
-# """, ]
-
-#         for expression in expressions:
-#             session.execute(expression)
 
 
 migration_step = MigrationStep()

@@ -23,29 +23,27 @@ from genesis_db.user_api.api import controllers
 #     __controller__ = controllers.DatabaseInstanceController
 
 
-class DatabaseRoute(routes.Route):
-    __controller__ = controllers.DatabaseController
+class PGDatabaseRoute(routes.Route):
+    __controller__ = controllers.PGDatabaseController
 
 
-class UserRoute(routes.Route):
-    __controller__ = controllers.UserController
+class PGUserPrivilegeRoute(routes.Route):
+    __controller__ = controllers.PGUserPrivilegeController
+
+
+class PGUserRoute(routes.Route):
+    __controller__ = controllers.PGUserController
+
+    privileges = routes.route(PGUserPrivilegeRoute, resource_route=True)
 
 
 class PGInstanceRoute(routes.Route):
     __controller__ = controllers.PGInstanceController
 
     # route to /v1/types/postgres/instances/<uuid>/database/[<uuid>]
-    databases = routes.route(DatabaseRoute, resource_route=True)
+    databases = routes.route(PGDatabaseRoute, resource_route=True)
     # route to /v1/types/postgres/instances/<uuid>/users/[<uuid>]
-    users = routes.route(UserRoute, resource_route=True)
-
-
-class RoleRoute(routes.Route):
-    __controller__ = controllers.RoleController
-
-
-class RolePrivilegeRoute(routes.Route):
-    __controller__ = controllers.RolePrivilegeController
+    users = routes.route(PGUserRoute, resource_route=True)
 
 
 class PGVersionRoute(routes.Route):
@@ -59,12 +57,6 @@ class PGRoute(routes.Route):
 
     # route to /v1/types/postgres/instances/[<uuid>]
     instances = routes.route(PGInstanceRoute)
-
-    # route to /v1/types/postgres/roles/[<uuid>]
-    roles = routes.route(RoleRoute)
-
-    # route to /v1/types/postgres/role_privileges/[<uuid>]
-    role_privileges = routes.route(RolePrivilegeRoute)
 
     # route to /v1/types/postgres/versions/[<uuid>]
     versions = routes.route(PGVersionRoute)

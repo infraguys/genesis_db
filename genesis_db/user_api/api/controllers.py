@@ -33,7 +33,7 @@ class ApiEndpointController(ra_controllers.RoutesListController):
 class TypeController(ra_controllers.Controller):
 
     def filter(self, filters):
-        return ['postgres']
+        return ["postgres"]
 
 
 class PGController(ra_controllers.RoutesListController):
@@ -76,7 +76,7 @@ class PGInstanceController(
     )
 
 
-class DatabaseController(
+class PGDatabaseController(
     iam_controllers.NestedPolicyBasedController,
     ra_controllers.BaseNestedResourceControllerPaginated,
 ):
@@ -105,7 +105,7 @@ class DatabaseController(
 #     )
 
 
-class UserController(
+class PGUserController(
     iam_controllers.NestedPolicyBasedController,
     ra_controllers.BaseNestedResourceControllerPaginated,
 ):
@@ -120,29 +120,16 @@ class UserController(
     )
 
 
-class RoleController(
-    iam_controllers.PolicyBasedControllerMixin,
-    ra_controllers.BaseResourceControllerPaginated,
-):
-    __policy_service_name__ = "genesis_db"
-    __policy_name__ = "role"
-
-    __resource__ = ra_resources.ResourceByRAModel(
-        model_class=models.PGRole,
-        convert_underscore=False,
-        process_filters=True,
-    )
-
-
-class RolePrivilegeController(
-    iam_controllers.PolicyBasedControllerMixin,
-    ra_controllers.BaseResourceControllerPaginated,
+class PGUserPrivilegeController(
+    iam_controllers.NestedPolicyBasedController,
+    ra_controllers.BaseNestedResourceControllerPaginated,
 ):
     __policy_service_name__ = "genesis_db"
     __policy_name__ = "role_privilege"
+    __pr_name__ = "user"
 
     __resource__ = ra_resources.ResourceByRAModel(
-        model_class=models.PGRolePrivilege,
+        model_class=models.PGUserPrivilege,
         convert_underscore=False,
         process_filters=True,
     )

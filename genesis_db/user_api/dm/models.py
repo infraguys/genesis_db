@@ -117,14 +117,9 @@ class PGPrivilege(str, enum.Enum):
     USAGE = "USAGE"
 
 
-class PGEntity(enum.Enum):
-    DATABASE = "DATABASE"
-
-
 class DatabaseEntity(types_dynamic.AbstractKindModel):
     KIND = "DATABASE"
 
-    entity = relationships.relationship(PGDatabase, required=True)
     privileges = properties.property(
         types.TypedList(types.Enum([v.value for v in PGPrivilege])),
         default=[PGPrivilege.ALL.value],
@@ -139,6 +134,7 @@ class PGUserPrivilege(
 
     __tablename__ = "postgres_user_privileges"
     user = relationships.relationship(PGUser, required=True)
+    database = relationships.relationship(PGDatabase, required=True)
     entity = properties.property(
         types_dynamic.KindModelSelectorType(
             types_dynamic.KindModelType(DatabaseEntity),

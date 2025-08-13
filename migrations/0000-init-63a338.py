@@ -91,6 +91,8 @@ CREATE TABLE postgres_user_privileges (
     entity JSONB NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
+    database UUID NOT NULL,
+    FOREIGN KEY ("database") REFERENCES postgres_databases(uuid),
     FOREIGN KEY ("user") REFERENCES postgres_users(uuid)
 );
 """,

@@ -14,5 +14,4 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# project
-GLOBAL_SERVICE_NAME = "genesis_db"
+API_VERSION_v1 = "v1"

@@ -14,5 +14,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# project
-GLOBAL_SERVICE_NAME = "genesis_db"
+from oslo_config import cfg
+from restalchemy.api import controllers
+
+DOMAIN = "orch_api"
+CONF = cfg.CONF
+
+
+class ApiEndpointController(controllers.RoutesListController):
+    """Controller for /v1/ endpoint"""
+
+    __TARGET_PATH__ = "/v1/"

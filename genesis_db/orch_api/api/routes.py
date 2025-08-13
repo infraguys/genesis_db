@@ -14,25 +14,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
+from restalchemy.api import routes
 
-from restalchemy.common import contexts
-
-from gcl_looper.services import basic
-
-
-LOG = logging.getLogger(__name__)
+from gcl_sdk.agents.universal.orch_api import routes as orch_routes
+from genesis_db.orch_api.api import controllers
 
 
-class BuilderAgent(basic.BasicService):
+class ApiEndpointRoute(routes.Route):
+    """Handler for /v1/ endpoint"""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    __controller__ = controllers.ApiEndpointController
+    __allow_methods__ = [routes.FILTER]
 
-    def _setup(self):
-        pass
-
-    def _iteration(self):
-        ctx = contexts.Context()
-        with ctx.session_manager():
-            LOG.info("Hello from builder agent")
+    agents = routes.route(orch_routes.UniversalAgentsRoute)

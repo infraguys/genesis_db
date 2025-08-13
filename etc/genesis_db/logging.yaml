@@ -25,6 +25,7 @@ loggers:
   genesis_db: {}
   bjoern: {}
   gcl_looper: {}
+  gcl_sdk: {}
   restalchemy: {}
   sentry_sdk: {}
 

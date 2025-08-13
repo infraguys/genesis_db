@@ -17,40 +17,73 @@
 import logging
 import sys
 
+from gcl_looper.services import bjoern_service
 from gcl_looper.services import hub
 from oslo_config import cfg
 from restalchemy.common import config_opts as ra_config_opts
 from restalchemy.storage.sql import engines
 
+from genesis_db.orch_api.api import app
 from genesis_db.common import config
 from genesis_db.common import log as infra_log
-from genesis_db.services.builders import agents
 
-DOMAIN = "builder_agent"
 
+api_cli_opts = [
+    cfg.StrOpt(
+        "bind-host",
+        default="127.0.0.1",
+        help="The host IP to bind to",
+    ),
+    cfg.IntOpt(
+        "bind-port",
+        default=11011,
+        help="The port to bind to",
+    ),
+    cfg.IntOpt(
+        "workers",
+        default=1,
+        help="How many http servers should be started",
+    ),
+]
+
+
+DOMAIN = "orch_api"
 
 CONF = cfg.CONF
+CONF.register_cli_opts(api_cli_opts, DOMAIN)
 ra_config_opts.register_posgresql_db_opts(CONF)
 
 
 def main():
+    # Parse config
     config.parse(sys.argv[1:])
 
+    # Configure logging
     infra_log.configure()
     log = logging.getLogger(__name__)
 
-    service_hub = hub.ProcessHubService()
+    serv_hub = hub.ProcessHubService()
 
-    service = agents.BuilderAgent(
-        iter_min_period=3,
-    )
+    for _ in range(CONF[DOMAIN].workers):
+        service = bjoern_service.BjoernService(
+            wsgi_app=app.build_wsgi_application(),
+            host=CONF[DOMAIN].bind_host,
+            port=CONF[DOMAIN].bind_port,
+            bjoern_kwargs=dict(reuse_port=True),
+        )
 
-    service.add_setup(
-        lambda: engines.engine_factory.configure_postgresql_factory(conf=CONF)
-    )
+        service.add_setup(
+            lambda: engines.engine_factory.configure_postgresql_factory(
+                conf=CONF
+            )
+        )
 
-    service_hub.add_service(service)
-    service_hub.start()
+        serv_hub.add_service(service)
+
+    if CONF[DOMAIN].workers > 1:
+        serv_hub.start()
+    else:
+        service.start()
 
     log.info("Bye!!!")
 

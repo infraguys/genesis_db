@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+# Copyright 2025 Genesis Corporation
+#
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+set -eu
+set -x
+set -o pipefail
+
+
+GC_PATH="/opt/genesis_db"
+GC_CFG_DIR=/etc/genesis_db
+WORK_DIR="/var/lib/genesis/genesis_db"
+VENV_PATH="$GC_PATH/.venv"
+
+SYSTEMD_SERVICE_DIR=/etc/systemd/system/
+
+DEV_SDK_PATH="/opt/gcl_sdk"
+SDK_DEV_MODE=$([ -d "$DEV_SDK_PATH" ] && echo "true" || echo "false")
+
+# Install packages
+sudo apt update
+sudo apt dist-upgrade -y
+sudo apt install -y \
+    postgresql \
+    libev-dev
+
+# Install genesis core
+sudo mkdir -p $GC_CFG_DIR
+sudo mkdir -p $WORK_DIR
+sudo cp "$GC_PATH/etc/genesis_db/genesis_pg_agent.conf" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
+
+mkdir -p "$VENV_PATH"
+python3 -m venv "$VENV_PATH"
+source "$GC_PATH/.venv/bin/activate"
+pip install pip --upgrade
+pip install -r "$GC_PATH"/requirements.txt
+pip install -e "$GC_PATH"
+
+# In the dev mode the gcl_sdk package is installed from the local machine
+if [[ "$SDK_DEV_MODE" == "true" ]]; then
+    pip uninstall -y gcl_sdk
+    pip install -e "$DEV_SDK_PATH"
+fi
+
+# Create links to venv
+sudo ln -sf "$VENV_PATH/bin/genesis-universal-agent" "/usr/bin/genesis-db-pg-agent"
+
+deactivate
+
+# Install Systemd service files
+sudo cp "$GC_PATH/etc/systemd/genesis-db-pg-agent.service" $SYSTEMD_SERVICE_DIR
+
+# Enable genesis db services
+sudo systemctl enable genesis-db-pg-agent

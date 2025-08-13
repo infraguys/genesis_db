@@ -32,6 +32,9 @@ GC_PG_DB="genesis_db"
 
 SYSTEMD_SERVICE_DIR=/etc/systemd/system/
 
+DEV_SDK_PATH="/opt/gcl_sdk"
+SDK_DEV_MODE=$([ -d "$DEV_SDK_PATH" ] && echo "true" || echo "false")
+
 # Install packages
 sudo apt update
 sudo apt dist-upgrade -y
@@ -56,19 +59,37 @@ pip install pip --upgrade
 pip install -r "$GC_PATH"/requirements.txt
 pip install -e "$GC_PATH"
 
+# In the dev mode the gcl_sdk package is installed from the local machine
+if [[ "$SDK_DEV_MODE" == "true" ]]; then
+    pip uninstall -y gcl_sdk
+    pip install -e "$DEV_SDK_PATH"
+    # Apply SDK migrations
+    ra-apply-migration --config-dir "$GC_PATH/etc/genesis_db/" --path "/opt/gcl_sdk/gcl_sdk/migrations"
+else
+    # Apply SDK migrations
+    # TODO: Use a command or apply migration on startup
+    ra-apply-migration --config-dir "$GC_PATH/etc/genesis_db/" --path "$VENV_PATH/lib/python3.12/site-packages/gcl_sdk/gcl_sdk/migrations"
+fi
+
 # Apply migrations
 ra-apply-migration --config-dir "$GC_PATH/etc/genesis_db/" --path "$GC_PATH/migrations"
 deactivate
 
 # Create links to venv
-sudo ln -sf "$VENV_PATH/bin/genesis-db-builder-agent" "/usr/bin/genesis-db-builder-agent"
+sudo ln -sf "$VENV_PATH/bin/genesis-db-gservice" "/usr/bin/genesis-db-gservice"
 sudo ln -sf "$VENV_PATH/bin/genesis-db-user-api" "/usr/bin/genesis-db-user-api"
+sudo ln -sf "$VENV_PATH/bin/genesis-db-status-api" "/usr/bin/genesis-db-status-api"
+sudo ln -sf "$VENV_PATH/bin/genesis-db-orch-api" "/usr/bin/genesis-db-orch-api"
 
 # Install Systemd service files
-sudo cp "$GC_PATH/etc/systemd/genesis-db-builder-agent.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/genesis-db-gservice.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-user-api.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/genesis-db-status-api.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/genesis-db-orch-api.service" $SYSTEMD_SERVICE_DIR
 
 # Enable genesis db services
 sudo systemctl enable \
-    genesis-db-builder-agent \
-    genesis-db-user-api
+    genesis-db-gservice \
+    genesis-db-user-api \
+    genesis-db-status-api \
+    genesis-db-orch-api

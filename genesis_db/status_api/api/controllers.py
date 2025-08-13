@@ -13,6 +13,10 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from restalchemy.api import controllers
 
-# project
-GLOBAL_SERVICE_NAME = "genesis_db"
+
+class ApiEndpointController(controllers.RoutesListController):
+    """Controller for /v1/ endpoint"""
+
+    __TARGET_PATH__ = "/v1/"

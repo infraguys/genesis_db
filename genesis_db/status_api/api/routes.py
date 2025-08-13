@@ -14,5 +14,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# project
-GLOBAL_SERVICE_NAME = "genesis_db"
+from restalchemy.api import routes
+
+from gcl_sdk.agents.universal.status_api import routes as status_routes
+from genesis_db.status_api.api import controllers
+
+
+class ApiEndpointRoute(routes.Route):
+    """Handler for /v1/ endpoint"""
+
+    __controller__ = controllers.ApiEndpointController
+    __allow_methods__ = [routes.FILTER]
+
+    agents = routes.route(status_routes.UniversalAgentsRoute)
+    kind = routes.route(status_routes.KindRoute)

@@ -1,0 +1,33 @@
+Name: dbaas
+Description: Genesis DBaaS element
+SchemaVersion: 1
+Version: 0.0.1
+
+Requirements: []
+
+Resources:
+
+  $core.compute.nodes:
+    dbaas_cp:
+      name: dbaas_cp
+      root_disk_size: 15
+      cores: 1
+      ram: 1024
+      image: http://repository.genesis-core.tech:8081/genesis-db/latest/genesis-db.raw
+
+  $core.dns.domains.$local_domain:uuid.records:
+    dbaas_record:
+      name: "dbaas-cp"
+      type: "A"
+      record:
+        name: "dbaas-cp"
+        address: "$core.compute.nodes.$dbaas_cp.default_network.ipv4"
+  
+  $dbaas.types.postgres.versions:
+    pg16:
+      name: "pg16"
+      image: http://repository.genesis-core.tech:8081/genesis-db/latest/genesis-db-pg.raw
+
+Import:
+  Resources:
+    local_domain: local_domain

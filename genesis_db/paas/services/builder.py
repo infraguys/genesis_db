@@ -15,7 +15,6 @@
 #    under the License.
 
 import logging
-import sys
 import uuid as sys_uuid
 import typing as tp
 
@@ -28,6 +27,7 @@ from genesis_db.paas.dm import models
 LOG = logging.getLogger(__name__)
 NODE_KIND = sdk_models.Node.get_resource_kind()
 CONFIG_KIND = sdk_models.Config.get_resource_kind()
+AGENT_UUID5_NAME = "dbaas"
 
 
 class PaaSBuilder(builder.PaaSBuilder):
@@ -37,6 +37,10 @@ class PaaSBuilder(builder.PaaSBuilder):
         instance_model: tp.Type[models.PGDatabase],
     ):
         super().__init__(instance_model)
+
+    @classmethod
+    def agent_uuid_by_node(cls, node_uuid: sys_uuid.UUID) -> sys_uuid.UUID:
+        return sys_uuid.uuid5(node_uuid, AGENT_UUID5_NAME)
 
     def create_paas_objects(
         self, instance: models.PGDatabase
@@ -59,22 +63,23 @@ class PaaSBuilder(builder.PaaSBuilder):
             for node in nodes
         )
 
-    def post_create_instance_resource(
+    def schedule_paas_objects(
         self,
         instance: models.PGDatabase,
-        resource: ua_models.TargetResource,
-        derivatives: tp.Collection[ua_models.TargetResource] = tuple(),
-    ) -> None:
-        """The hook is performed after saving instance resource.
+        paas_objects: tp.Collection[models.PGDatabaseNode],
+    ) -> dict[sys_uuid.UUID, tp.Collection[models.PGDatabaseNode]]:
+        """Schedule the PaaS objects.
 
-        The hook is called only for new instances.
+        The method schedules the PaaS objects. The result is a dictionary
+        where the key is a UUID of a agent and the value is a list of PaaS
+        objects that should be scheduled on this agent.
         """
-        super().post_create_instance_resource(instance, resource, derivatives)
-
-        # Put scheduling logic here.
         nodes = instance.get_infra()[1:]
-        for node_database, node in zip(derivatives, nodes):
-            node_database.agent = sys_uuid.uuid5(node.uuid, "dbaas")
+        scheduled = {}
+        for node, node_database in zip(nodes, paas_objects):
+            agent_uuid = self.agent_uuid_by_node(node.uuid)
+            scheduled[agent_uuid] = [node_database]
+        return scheduled
 
     def actualize_paas_objects_source_data_plane(
         self,
@@ -94,22 +99,22 @@ class PaaSBuilder(builder.PaaSBuilder):
         """
         return paas_collection.targets()
 
-    def actualize_paas_objects_source_infra(
+    def actualize_paas_objects_source_master(
         self,
         instance: models.PGDatabase,
-        infra_instance: ua_models.InstanceWithDerivativesMixin,
+        master_instance: ua_models.InstanceWithDerivativesMixin,
         paas_collection: builder.PaaSCollection,
     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-        """Actualize the PaaS objects. Changes from the infrastructure.
+        """Actualize the PaaS objects. Changes from the master instance.
 
-        The method is called when the instance is outdated from infrastructure
-        point of view. For example, the instance `Database` is linked to the
+        The method is called when the instance is outdated from master
+        instance point of view. For example, the instance `Database` is linked to the
         `NodeSet` instance. If the `NodeSet` is outdated, this method is called
         to reactualize the `Database` instance.
 
         Args:
             instance: The instance to actualize.
-            infra_instance: The infrastructure instance.
-            derivatives: The actual PaaS objects.
+            master_instance: The master instance.
+            paas_collection: The actual PaaS objects.
         """
         return paas_collection.targets()

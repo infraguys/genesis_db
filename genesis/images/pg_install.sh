@@ -35,7 +35,6 @@ SDK_DEV_MODE=$([ -d "$DEV_SDK_PATH" ] && echo "true" || echo "false")
 sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
-    postgresql \
     libev-dev
 
 # Install genesis core
@@ -67,3 +66,45 @@ sudo cp "$GC_PATH/etc/systemd/genesis-db-pg-agent.service" $SYSTEMD_SERVICE_DIR
 
 # Enable genesis db services
 sudo systemctl enable genesis-db-pg-agent
+
+
+# Patroni
+
+# Install packages
+sudo apt-get update
+sudo apt-get install postgresql-common -y
+sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+sudo apt-get update
+sudo apt -y install postgresql
+sudo systemctl stop postgresql
+sudo systemctl disable postgresql
+sudo ln -s /usr/lib/postgresql/17/bin/* /usr/sbin/
+
+# Setup watchdog
+cat <<EOF | sudo tee /etc/udev/rules.d/99-watchdog.rules
+KERNEL=="watchdog", OWNER="postgres", GROUP="postgres"
+EOF
+sudo sh -c 'echo "softdog" >> /etc/modules-load.d/softdog.conf'
+sudo sed -i '/blacklist softdog/d' /lib/modprobe.d/* /etc/modprobe.d/*
+
+# Prepare patroni
+sudo su postgres <<'EOF'
+cd $HOME
+mkdir -p patroni
+cd patroni
+python3 -m venv venv
+source venv/bin/activate
+pip install psycopg[binary] patroni[raft]
+
+mkdir -p data
+chmod 700 data
+mkdir -p raft
+chmod 700 raft
+EOF
+
+# Install Systemd service files
+sudo cp "$GC_PATH/etc/systemd/genesis-patroni.service" $SYSTEMD_SERVICE_DIR
+
+# Enable genesis db services
+sudo systemctl enable \
+    genesis-patroni

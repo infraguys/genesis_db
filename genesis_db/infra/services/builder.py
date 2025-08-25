@@ -29,6 +29,95 @@ LOG = logging.getLogger(__name__)
 NODE_KIND = sdk_models.Node.get_resource_kind()
 CONFIG_KIND = sdk_models.Config.get_resource_kind()
 
+PATRONI_RAFT_PORT = 5010
+
+
+# RAFT_PARTNER_ADDRS="[10.20.0.20:5010,10.20.0.21:5010,10.20.0.22:5010]"
+# CLUSTER_NAME="cluster-1"
+# MY_NAME=$(hostname --short)
+# MY_IP=$(hostname -I | awk ' {print $1}')
+PATRONI_CONF_TEMPLATE = """\
+scope: {cluster_name}
+namespace: /db/
+name: {node_name}
+
+restapi:
+  listen: "0.0.0.0:8008"
+  connect_address: "{node_ip}:8008"
+  authentication:
+    username: patroni
+    password: patroni
+
+raft:
+  data_dir: /var/lib/postgresql/patroni/raft/
+  self_addr: "{node_ip}:5010"
+  partner_addrs: {raft_partner_addrs}
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: false
+      use_slots: true
+      parameters:
+    synchronous_mode: {sync_mode}
+    synchronous_mode_strict: {sync_mode}
+    synchronous_node_count: {sync_replica_number}
+
+  initdb:
+  - encoding: UTF8
+  - data-checksums
+  - auth-local: peer
+  - auth-host: scram-sha-256
+
+  # Some additional users which needs to be created after initializing new cluster
+  # users:
+  #   admin:
+  #     password: admin
+  #     options:
+  #       - createrole
+  #       - createdb
+
+postgresql:
+  listen: "0.0.0.0:5432"
+  connect_address: "{node_ip}:5432"
+  data_dir: /var/lib/postgresql/patroni/data/
+  bin_dir: /usr/sbin
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: confidential
+    superuser:
+      username: postgres
+      password: my-super-password
+    rewind:
+      username: rewind_user
+      password: rewind_password
+  parameters:
+    unix_socket_directories: '/var/run/postgresql,/tmp'
+  pg_hba:
+  - host replication replicator 0.0.0.0/0 scram-sha-256
+  - host all all 0.0.0.0/0 scram-sha-256
+  - local all all peer map=genesis_map
+  pg_ident:
+   - genesis_map root postgres
+   - genesis_map postgres postgres
+watchdog:
+  mode: required
+  device: /dev/watchdog
+  safety_margin: 5
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false
+"""
+
 
 class CoreInfraBuilder(builder.CoreInfraBuilder):
 
@@ -66,28 +155,39 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             instance: The instance to actualize.
             infra: The infrastructure objects.
         """
-        nodes = []
+        nodes = {}
         configs = []
 
         for _, actual in infra.infra_objects:
             if actual.get_resource_kind() == NODE_KIND:
-                nodes.append(actual)
+                nodes[actual.uuid] = actual
             elif actual.get_resource_kind() == CONFIG_KIND:
                 configs.append(actual)
 
-        node_ips = [node.default_network.get("ipv4", "") for node in nodes]
-        content = "\n".join(node_ips)
+        node_raft_members = [
+            f"{node.default_network.get("ipv4", "")}:{PATRONI_RAFT_PORT}"
+            for node in nodes.values()
+        ]
+        sync_mode = "true" if instance.sync_replica_number else "false"
 
         # Update config content
         for target, _ in infra.infra_objects:
             if target.get_resource_kind() != CONFIG_KIND:
                 continue
+            node = nodes[target.target.node]
+            content = PATRONI_CONF_TEMPLATE.format(
+                cluster_name=instance.name,
+                node_name=node.name,
+                node_ip=node.default_network.get("ipv4", ""),
+                raft_partner_addrs=node_raft_members,
+                sync_mode=sync_mode,
+                sync_replica_number=instance.sync_replica_number,
+            )
             if target.body.content != content:
                 target.body.content = content
 
         if all(
-            config.status == sdk_c.InstanceStatus.ACTIVE.value
-            for config in configs
+            config.status == sdk_c.InstanceStatus.ACTIVE.value for config in configs
         ):
             instance.status = sdk_c.InstanceStatus.ACTIVE.value
         else:

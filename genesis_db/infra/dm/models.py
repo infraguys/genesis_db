@@ -101,7 +101,9 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
                 body=sdk_models.TextBodyConfig(
                     content="",
                 ),
-                path="/etc/genesis_db/patroni.yaml",
+                path="/var/lib/postgresql/patroni/patroni.yml",
+                owner="postgres",
+                group="postgres",
             )
             infra_objects.append(node)
             infra_objects.append(config)

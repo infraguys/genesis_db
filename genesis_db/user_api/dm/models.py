@@ -15,6 +15,7 @@
 #    under the License.
 
 import enum
+import re
 
 from restalchemy.dm import models
 from restalchemy.dm import properties
@@ -23,12 +24,19 @@ from restalchemy.dm import types
 from restalchemy.dm import types_dynamic
 from restalchemy.storage.sql import orm
 
+from genesis_db.common import utils as u
+
 
 class PGStatus(str, enum.Enum):
     NEW = "NEW"
     IN_PROGRESS = "IN_PROGRESS"
     ACTIVE = "ACTIVE"
     ERROR = "ERROR"
+
+
+class PGNameType(types.BaseCompiledRegExpTypeFromAttr):
+    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+    pattern = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
 
 
 class PGVersion(
@@ -61,13 +69,45 @@ class PGInstance(
     disk_size = properties.property(
         types.Integer(min_value=1, max_value=1024**3)
     )
+    # TODO: restrict shrink/support shrink
     nodes_number = properties.property(
         types.Integer(min_value=1, max_value=16)
     )
     sync_replica_number = properties.property(
         types.Integer(min_value=0, max_value=15)
     )
-    version = relationships.relationship(PGVersion, required=True)
+    version = relationships.relationship(
+        PGVersion, required=True, read_only=True
+    )
+
+    def delete(self, session=None, **kwargs):
+        u.remove_nested_dm(PGDatabase, "instance", self, session=session)
+        u.remove_nested_dm(PGUser, "instance", self, session=session)
+        return super().delete(session=session, **kwargs)
+
+
+class PGUser(
+    models.ModelWithUUID,
+    models.ModelWithNameDesc,
+    models.ModelWithTimestamp,
+    orm.SQLStorableMixin,
+):
+
+    __tablename__ = "postgres_users"
+    # TODO: restrict system users (postgres, replicator, rewind_user)
+    name = properties.property(PGNameType(), required=True, read_only=True)
+    status = properties.property(
+        types.Enum([status.value for status in PGStatus]),
+        default=PGStatus.NEW.value,
+    )
+    password = properties.property(types.String(min_length=8, max_length=99))
+    instance = relationships.relationship(
+        PGInstance, required=True, read_only=True
+    )
+
+    def delete(self, session=None, **kwargs):
+        # u.remove_nested_dm(PGUserPrivilege, "user", self, session=session)
+        return super().delete(session=session, **kwargs)
 
 
 class PGDatabase(
@@ -79,65 +119,64 @@ class PGDatabase(
 
     __tablename__ = "postgres_databases"
 
-    name = properties.property(types.String(min_length=1, max_length=255))
-    instance = relationships.relationship(PGInstance, required=True)
-
-
-# TODO: there may be other database types
-# class DatabaseInstance(models.ModelWithUUID, orm.SQLStorableMixin):
-#     database = relationships.relationship(Database, required=True)
-
-
-class PGUser(
-    models.ModelWithUUID,
-    models.ModelWithNameDesc,
-    models.ModelWithTimestamp,
-    orm.SQLStorableMixin,
-):
-
-    __tablename__ = "postgres_users"
-    name = properties.property(types.String(min_length=1, max_length=64))
-    password = properties.property(types.String(min_length=8, max_length=256))
-    instance = relationships.relationship(PGInstance, required=True)
-
-
-# TODO: actually it's a role model for PG, may not be suited well for other DBs
-class PGPrivilege(str, enum.Enum):
-    ALL = "ALL"
-    SELECT = "SELECT"
-    INSERT = "INSERT"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
-    RULE = "RULE"
-    REFERENCES = "REFERENCES"
-    TRIGGER = "TRIGGER"
-    CREATE = "CREATE"
-    TEMPORARY = "TEMPORARY"
-    EXECUTE = "EXECUTE"
-    USAGE = "USAGE"
-
-
-class DatabaseEntity(types_dynamic.AbstractKindModel):
-    KIND = "DATABASE"
-
-    privileges = properties.property(
-        types.TypedList(types.Enum([v.value for v in PGPrivilege])),
-        default=[PGPrivilege.ALL.value],
+    name = properties.property(PGNameType(), required=True)
+    status = properties.property(
+        types.Enum([status.value for status in PGStatus]),
+        default=PGStatus.NEW.value,
     )
+    instance = relationships.relationship(PGInstance, required=True)
+    owner = relationships.relationship(PGUser, required=True)
+
+    def delete(self, session=None, **kwargs):
+        # u.remove_nested_dm(PGUserPrivilege, "database", self, session=session)
+        return super().delete(session=session, **kwargs)
 
 
-class PGUserPrivilege(
-    models.ModelWithUUID,
-    models.ModelWithTimestamp,
-    orm.SQLStorableMixin,
-):
+# class PGDatabasePrivilege(str, enum.Enum):
+#     ALL = "ALL"
+#     CREATE = "CREATE"
+#     CONNECT = "CONNECT"
+#     TEMPORARY = "TEMPORARY"
 
-    __tablename__ = "postgres_user_privileges"
-    user = relationships.relationship(PGUser, required=True)
-    database = relationships.relationship(PGDatabase, required=True)
-    entity = properties.property(
-        types_dynamic.KindModelSelectorType(
-            types_dynamic.KindModelType(DatabaseEntity),
-        ),
-        required=True,
-    )
+
+# class PGTablePrivilege(str, enum.Enum):
+#     ALL = "ALL"
+#     SELECT = "SELECT"
+#     INSERT = "INSERT"
+#     UPDATE = "UPDATE"
+#     DELETE = "DELETE"
+#     TRUNCATE = "TRUNCATE"
+#     REFERENCES = "REFERENCES"
+#     TRIGGER = "TRIGGER"
+#     MAINTAIN = "MAINTAIN"
+
+
+# class DatabaseEntity(types_dynamic.AbstractKindModel):
+#     KIND = "DATABASE"
+
+#     privileges = properties.property(
+#         types.TypedList(types.Enum([v.value for v in PGDatabasePrivilege])),
+#         default=[PGDatabasePrivilege.ALL.value],
+#     )
+
+#     @property
+#     def name(self):
+#         # TODO: different kinds (for ex. tables) will have `name` prop
+#         return ""
+
+
+# class PGUserPrivilege(
+#     models.ModelWithUUID,
+#     models.ModelWithTimestamp,
+#     orm.SQLStorableMixin,
+# ):
+
+#     __tablename__ = "postgres_user_privileges"
+#     user = relationships.relationship(PGUser, required=True)
+#     database = relationships.relationship(PGDatabase, required=True)
+#     entity = properties.property(
+#         types_dynamic.KindModelSelectorType(
+#             types_dynamic.KindModelType(DatabaseEntity),
+#         ),
+#         required=True,
+#     )

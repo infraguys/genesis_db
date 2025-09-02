@@ -76,18 +76,20 @@ class GeneralService(basic.BasicService):
             iter_min_period=iter_min_period,
         )
 
-        # PaaS builder
-        builder_paas = paas_builder.PaaSBuilder(
-            instance_model=paas_models.PGDatabase,
-        )
-
         # Services
         self._services = [
             builder_infra,
             infra_scheduler,
             infra_agent,
-            builder_paas,
         ]
+
+        # PaaS builders
+        for builder in (
+            paas_builder.PGUserBuilder,
+            paas_builder.PGDatabaseBuilder,
+            # paas_builder.PGSUserPrivilegeBuilder,
+        ):
+            self._services.append(builder())
 
     def _setup(self):
         LOG.info("Setup all services")

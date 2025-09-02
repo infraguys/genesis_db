@@ -29,6 +29,79 @@ from genesis_db.user_api.dm import models
 LOG = logging.getLogger(__name__)
 
 
+class PGUserNode(
+    ra_models.ModelWithUUID,
+    ra_models.ModelWithNameDesc,
+    ra_models.ModelWithTimestamp,
+    ua_models.TargetResourceKindAwareMixin,
+):
+    name = properties.property(ra_types.String(min_length=1, max_length=64))
+    password_hash = properties.property(
+        ra_types.String(min_length=8, max_length=256)
+    )
+
+    @classmethod
+    def get_resource_kind(cls) -> str:
+        """Return the resource kind."""
+        return "pg_user_node"
+
+    def get_resource_target_fields(self) -> tp.Collection[str]:
+        """Return the collection of target fields.
+
+        Refer to the Resource model for more details about target fields.
+        """
+        return frozenset(
+            (
+                "uuid",
+                "name",
+                "password_hash",
+            )
+        )
+
+
+class PGUser(
+    models.PGUser,
+    ua_models.InstanceWithDerivativesMixin,
+):
+
+    __master_model__ = sdk_models.NodeSet
+    __derivative_model_map__ = {
+        "pg_user_node": PGUserNode,
+    }
+
+    @classmethod
+    def get_resource_kind(cls) -> str:
+        """Return the resource kind."""
+        return "pg_user"
+
+    def get_resource_target_fields(self) -> tp.Collection[str]:
+        """Return the collection of target fields.
+
+        Refer to the Resource model for more details about target fields.
+        """
+        return frozenset(
+            (
+                "uuid",
+                "name",
+                "instance",
+                "password",
+            )
+        )
+
+    def get_infra(self) -> tp.Collection[sdk_models.NodeSet | sdk_models.Node]:
+        # TODO(akremenetsky): Temporarily solution since we don't have sets
+        # support yet
+
+        node_set = sdk_models.NodeSet.get_one_from_resource_storage(
+            self.instance.uuid
+        )
+
+        # Need to filter nodes by node_set.uuid
+        nodes = sdk_models.Node.get_all_from_resource_storage()
+
+        return [node_set] + list(nodes)
+
+
 class PGDatabaseNode(
     ra_models.ModelWithUUID,
     ra_models.ModelWithNameDesc,
@@ -36,7 +109,8 @@ class PGDatabaseNode(
     ua_models.TargetResourceKindAwareMixin,
 ):
     # TODO(akremenetsky): We already have name in the parent model
-    name = properties.property(ra_types.String(min_length=1, max_length=255))
+    name = properties.property(ra_types.String(min_length=1, max_length=64))
+    owner = properties.property(ra_types.String(min_length=1, max_length=64))
 
     @classmethod
     def get_resource_kind(cls) -> str:
@@ -52,6 +126,7 @@ class PGDatabaseNode(
             (
                 "uuid",
                 "name",
+                "owner",
             )
         )
 
@@ -81,7 +156,7 @@ class PGDatabase(
                 "uuid",
                 "name",
                 "instance",
-                "project_id",
+                "owner",
             )
         )
 
@@ -97,3 +172,84 @@ class PGDatabase(
         nodes = sdk_models.Node.get_all_from_resource_storage()
 
         return [node_set] + list(nodes)
+
+
+# class PGUserPrivilegeNode(
+#     ra_models.ModelWithUUID,
+#     ra_models.ModelWithNameDesc,
+#     ra_models.ModelWithTimestamp,
+#     ua_models.TargetResourceKindAwareMixin,
+# ):
+#     database = properties.property(
+#         ra_types.String(min_length=1, max_length=255)
+#     )
+#     username = properties.property(
+#         ra_types.String(min_length=1, max_length=64)
+#     )
+#     kind = properties.property(ra_types.String())
+#     kind_name = properties.property(ra_types.String())
+#     privileges = properties.property(ra_types.List())
+
+#     @classmethod
+#     def get_resource_kind(cls) -> str:
+#         """Return the resource kind."""
+#         return "pg_user_privilege_node"
+
+#     def get_resource_target_fields(self) -> tp.Collection[str]:
+#         """Return the collection of target fields.
+
+#         Refer to the Resource model for more details about target fields.
+#         """
+#         return frozenset(
+#             (
+#                 "uuid",
+#                 "database",
+#                 "username",
+#                 "kind",
+#                 "kind_name",
+#                 "privileges",
+#             )
+#         )
+
+
+# class PGUserPrivilege(
+#     models.PGUserPrivilege,
+#     ua_models.InstanceWithDerivativesMixin,
+# ):
+
+#     __master_model__ = sdk_models.NodeSet
+#     __derivative_model_map__ = {
+#         "pg_user_privilege_node": PGUserPrivilegeNode,
+#     }
+
+#     @classmethod
+#     def get_resource_kind(cls) -> str:
+#         """Return the resource kind."""
+#         return "pg_user_privilege"
+
+#     def get_resource_target_fields(self) -> tp.Collection[str]:
+#         """Return the collection of target fields.
+
+#         Refer to the Resource model for more details about target fields.
+#         """
+#         return frozenset(
+#             (
+#                 "uuid",
+#                 "used",
+#                 "database",
+#                 "entity",
+#             )
+#         )
+
+#     def get_infra(self) -> tp.Collection[sdk_models.NodeSet | sdk_models.Node]:
+#         # TODO(akremenetsky): Temporarily solution since we don't have sets
+#         # support yet
+
+#         node_set = sdk_models.NodeSet.get_one_from_resource_storage(
+#             self.instance.uuid
+#         )
+
+#         # Need to filter nodes by node_set.uuid
+#         nodes = sdk_models.Node.get_all_from_resource_storage()
+
+#         return [node_set] + list(nodes)

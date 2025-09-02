@@ -14,10 +14,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# project
-GLOBAL_SERVICE_NAME = "genesis_db"
+from restalchemy.dm import filters as dm_filters
 
-PATRONI_DIR = "/var/lib/postgresql/patroni"
-PATRONI_CONFIG_FILE = f"{PATRONI_DIR}/patroni.yml"
-PATRONI_API_PORT = 8008
-PATRONI_API_ENDPOINT = f"http://127.0.0.1:{PATRONI_API_PORT}"
+
+def remove_all_dm(dm_class, filters, session=None, **kwargs):
+    for dm in dm_class.objects.get_all(filters=filters, session=session):
+        dm.delete(session=session, **kwargs)
+
+
+def remove_nested_dm(
+    dm_class, parent_field_name, parent, session=None, **kwargs
+):
+    remove_all_dm(
+        dm_class,
+        filters={parent_field_name: dm_filters.EQ(parent)},
+        session=session,
+        **kwargs,
+    )

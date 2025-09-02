@@ -187,7 +187,8 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                 target.body.content = content
 
         if all(
-            config.status == sdk_c.InstanceStatus.ACTIVE.value for config in configs
+            config.status == sdk_c.InstanceStatus.ACTIVE.value
+            for config in configs
         ):
             instance.status = sdk_c.InstanceStatus.ACTIVE.value
         else:

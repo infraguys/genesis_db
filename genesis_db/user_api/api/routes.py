@@ -27,14 +27,14 @@ class PGDatabaseRoute(routes.Route):
     __controller__ = controllers.PGDatabaseController
 
 
-class PGUserPrivilegeRoute(routes.Route):
-    __controller__ = controllers.PGUserPrivilegeController
+# class PGUserPrivilegeRoute(routes.Route):
+#     __controller__ = controllers.PGUserPrivilegeController
 
 
 class PGUserRoute(routes.Route):
     __controller__ = controllers.PGUserController
 
-    privileges = routes.route(PGUserPrivilegeRoute, resource_route=True)
+    # privileges = routes.route(PGUserPrivilegeRoute, resource_route=True)
 
 
 class PGInstanceRoute(routes.Route):

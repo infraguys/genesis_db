@@ -62,20 +62,10 @@ CREATE TABLE postgres_instances (
 );
 """,
             """\
-CREATE TABLE postgres_databases (
-    uuid UUID PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    instance UUID NOT NULL,
-    FOREIGN KEY (instance) REFERENCES postgres_instances(uuid)
-);
-""",
-            """\
 CREATE TABLE postgres_users (
     uuid UUID PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
+    status VARCHAR(64) NOT NULL DEFAULT 'NEW',
     description TEXT,
     password VARCHAR(256) NOT NULL,
     created_at TIMESTAMP NOT NULL,
@@ -85,17 +75,31 @@ CREATE TABLE postgres_users (
 );
 """,
             """\
-CREATE TABLE postgres_user_privileges (
+CREATE TABLE postgres_databases (
     uuid UUID PRIMARY KEY,
-    "user" UUID NOT NULL,
-    entity JSONB NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    status VARCHAR(64) NOT NULL DEFAULT 'NEW',
+    description TEXT,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    database UUID NOT NULL,
-    FOREIGN KEY ("database") REFERENCES postgres_databases(uuid),
-    FOREIGN KEY ("user") REFERENCES postgres_users(uuid)
+    instance UUID NOT NULL,
+    owner UUID NOT NULL,
+    FOREIGN KEY (instance) REFERENCES postgres_instances(uuid),
+    FOREIGN KEY ("owner") REFERENCES postgres_users(uuid)
 );
 """,
+            #             """\
+            # CREATE TABLE postgres_user_privileges (
+            #     uuid UUID PRIMARY KEY,
+            #     "user" UUID NOT NULL,
+            #     entity JSONB NOT NULL,
+            #     created_at TIMESTAMP NOT NULL,
+            #     updated_at TIMESTAMP NOT NULL,
+            #     database UUID NOT NULL,
+            #     FOREIGN KEY ("database") REFERENCES postgres_databases(uuid),
+            #     FOREIGN KEY ("user") REFERENCES postgres_users(uuid)
+            # );
+            # """,
         ]
 
         for expression in expressions:
@@ -104,9 +108,9 @@ CREATE TABLE postgres_user_privileges (
     def downgrade(self, session):
 
         tables = [
-            "postgres_user_privileges",
-            "postgres_users",
+            # "postgres_user_privileges",
             "postgres_databases",
+            "postgres_users",
             "postgres_instances",
             "postgres_versions",
         ]

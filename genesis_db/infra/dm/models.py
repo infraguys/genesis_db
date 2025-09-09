@@ -27,6 +27,7 @@ from genesis_db.user_api.dm import models
 class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
 
     __derivative_model_map__ = {
+        "node_set": sdk_models.NodeSet,
         "node": sdk_models.Node,
         "config": sdk_models.Config,
     }
@@ -34,7 +35,7 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
     @classmethod
     def get_resource_kind(cls) -> str:
         """Return the resource kind."""
-        return "pg_instance"
+        return "pg_instance_iaas"
 
     def get_resource_target_fields(self) -> tp.Collection[str]:
         """Return the collection of target fields.
@@ -62,18 +63,22 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
         """Return the infrastructure objects."""
         infra_objects = []
 
-        node_set = sdk_models.NodeSet(
-            uuid=self.uuid,
-            name=self.name,
-            cores=self.cpu,
-            ram=self.ram,
-            root_disk_size=self.disk_size,
-            image=self.version.image,
-            replicas=self.nodes_number,
-            project_id=project_id,
-            status=sdk_c.NodeStatus.NEW.value,
+        # node_set = sdk_models.NodeSet(
+        #     uuid=self.uuid,
+        #     name=self.name,
+        #     cores=self.cpu,
+        #     ram=self.ram,
+        #     root_disk_size=self.disk_size,
+        #     image=self.version.image,
+        #     replicas=self.nodes_number,
+        #     project_id=project_id,
+        #     status=sdk_c.NodeStatus.NEW.value,
+        # )
+        # infra_objects.append(node_set)
+
+        OnReloadFunc = sdk_models.OnChangeShell(
+            command="systemctl reload genesis-patroni"
         )
-        infra_objects.append(node_set)
 
         # TODO: Remove nodes
         # NOTE(akremenetsky): Sets aren't supported yet so create
@@ -104,10 +109,11 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
                 path="/var/lib/postgresql/patroni/patroni.yml",
                 owner="postgres",
                 group="postgres",
+                # on_change=OnReloadFunc,
             )
             infra_objects.append(node)
             infra_objects.append(config)
 
-        node_set.nodes = [node.uuid for node in infra_objects[1:]]
+        # node_set.nodes = [node.uuid for node in infra_objects[1:]]
 
         return infra_objects

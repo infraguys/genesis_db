@@ -27,6 +27,7 @@ from genesis_db.infra.dm import models
 
 LOG = logging.getLogger(__name__)
 NODE_KIND = sdk_models.Node.get_resource_kind()
+NODE_SET_KIND = sdk_models.NodeSet.get_resource_kind()
 CONFIG_KIND = sdk_models.Config.get_resource_kind()
 
 PATRONI_RAFT_PORT = 5010
@@ -73,14 +74,6 @@ bootstrap:
   - auth-local: peer
   - auth-host: scram-sha-256
 
-  # Some additional users which needs to be created after initializing new cluster
-  # users:
-  #   admin:
-  #     password: admin
-  #     options:
-  #       - createrole
-  #       - createdb
-
 postgresql:
   listen: "0.0.0.0:5432"
   connect_address: "{node_ip}:5432"
@@ -89,13 +82,13 @@ postgresql:
   pgpass: /tmp/pgpass0
   authentication:
     replication:
-      username: replicator
-      password: confidential
+      username: dbaas_replicator
+      password: replicate_password
     superuser:
       username: postgres
       password: my-super-password
     rewind:
-      username: rewind_user
+      username: dbaas_rewinder
       password: rewind_password
   parameters:
     unix_socket_directories: '/var/run/postgresql,/tmp'
@@ -158,7 +151,10 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
         nodes = {}
         configs = []
 
-        for _, actual in infra.infra_objects:
+        for target, actual in infra.infra_objects:
+            # TODO: rework when nodeset is implemented
+            if target.get_resource_kind() == NODE_SET_KIND:
+                continue
             if actual.get_resource_kind() == NODE_KIND:
                 nodes[actual.uuid] = actual
             elif actual.get_resource_kind() == CONFIG_KIND:

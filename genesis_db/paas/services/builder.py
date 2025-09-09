@@ -21,6 +21,7 @@ import typing as tp
 from gcl_sdk.paas.services import builder
 from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
+from gcl_sdk.agents.universal import utils
 
 from genesis_db.common.pg_auth import passwd
 from genesis_db.paas.dm import models
@@ -37,17 +38,6 @@ class PaaSBuilder(builder.PaaSBuilder):
     def agent_uuid_by_node(cls, node_uuid: sys_uuid.UUID) -> sys_uuid.UUID:
         return sys_uuid.uuid5(node_uuid, AGENT_UUID5_NAME)
 
-    # def post_create_instance_resource(
-    #     self,
-    #     instance: (
-    #         ua_models.InstanceMixin | ua_models.InstanceWithDerivativesMixin
-    #     ),
-    #     resource: ua_models.TargetResource,
-    #     derivatives: tp.Collection[ua_models.TargetResource] = tuple(),
-    # ) -> None:
-    #     import pdb; pdb.set_trace()
-    #     super().post_create_instance_resource(instance, resource, derivatives)
-
     def schedule_paas_objects(
         self,
         instance: ua_models.InstanceWithDerivativesMixin,
@@ -62,7 +52,7 @@ class PaaSBuilder(builder.PaaSBuilder):
         objects that should be scheduled on this agent.
         """
 
-        nodes = instance.get_infra()[1:]
+        nodes = instance.get_infra()
         scheduled = {}
         for node, node_entity in zip(nodes, paas_objects):
             agent_uuid = self.agent_uuid_by_node(node.uuid)
@@ -108,69 +98,155 @@ class PaaSBuilder(builder.PaaSBuilder):
         return paas_collection.targets()
 
 
-class PGUserBuilder(PaaSBuilder):
+class PGInstanceBuilder(PaaSBuilder):
 
     def __init__(
         self,
-        instance_model: tp.Type[models.PGUser] = models.PGUser,
+        instance_model: tp.Type[models.PGInstance] = models.PGInstance,
     ):
         super().__init__(instance_model)
 
+    def _get_users(self, instance):
+        return {
+            u.name: {
+                # Don't give actual password to dataplane, just hash it
+                "pw_hash": passwd.scram_sha_256(u.password),
+            }
+            for u in instance.get_users()
+        }
+
+    def _get_databases(self, instance):
+        return {
+            d.name: {"owner": d.owner.name} for d in instance.get_databases()
+        }
+
     def create_paas_objects(
-        self, instance: models.PGUser
+        self, instance: models.PGInstance
     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
         """Create a list of PaaS objects.
 
         The method returns a list of PaaS objects that are required
         for the instance.
         """
-        # Get the infrastructure for the current PG instance
-        nodes = instance.get_infra()[1:]
 
-        # Don't give actual password to dataplane, just hash it
-        password_hash = passwd.scram_sha_256(instance.password)
+        # Get the infrastructure for the current PG instance
+        nodes = instance.get_infra()
+
+        users = self._get_users(instance)
+
+        databases = self._get_databases(instance)
 
         # Create the same derivatives database objects as nodes in the node set
         return tuple(
-            models.PGUserNode(
+            models.PGInstanceNode(
                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
                 name=instance.name,
                 instance=instance,
-                password_hash=password_hash,
+                sync_replica_number=instance.sync_replica_number,
+                users=users,
+                databases=databases,
             )
             for node in nodes
         )
 
-
-class PGDatabaseBuilder(PaaSBuilder):
-
-    def __init__(
+    def actualize_paas_objects(
         self,
-        instance_model: tp.Type[models.PGDatabase] = models.PGDatabase,
-    ):
-        super().__init__(instance_model)
-
-    def create_paas_objects(
-        self, instance: models.PGDatabase
+        instance: models.PGInstance,
+        resources: tp.Collection[
+            ua_models.TargetResourceKindAwareMixin
+        ] = tuple(),
     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-        """Create a list of PaaS objects.
+        """Basic update, all derivatives are non-unique"""
 
-        The method returns a list of PaaS objects that are required
-        for the instance.
-        """
-        # Get the infrastructure for the current PG instance
-        nodes = instance.get_infra()[1:]
+        actual_resources = []
 
-        # Create the same derivatives database objects as nodes in the node set
-        return tuple(
-            models.PGDatabaseNode(
-                uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
+        users = self._get_users(instance)
+
+        databases = self._get_databases(instance)
+
+        # Support only PGInstanceNode
+        for res in resources:
+            if not isinstance(res, models.PGInstanceNode):
+                LOG.warning(
+                    "PGInstanceBuilder doesn't support %s model type",
+                    res.__class__.__name__,
+                )
+            for k, v in dict(
                 name=instance.name,
                 instance=instance,
-                owner=instance.owner.name,
-            )
-            for node in nodes
-        )
+                sync_replica_number=instance.sync_replica_number,
+                users=users,
+                databases=databases,
+            ).items():
+                setattr(res, k, v)
+            actual_resources.append(res)
+
+        return actual_resources
+
+
+# class PGUserBuilder(PaaSBuilder):
+
+#     def __init__(
+#         self,
+#         instance_model: tp.Type[models.PGUser] = models.PGUser,
+#     ):
+#         super().__init__(instance_model)
+
+#     def create_paas_objects(
+#         self, instance: models.PGUser
+#     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
+#         """Create a list of PaaS objects.
+
+#         The method returns a list of PaaS objects that are required
+#         for the instance.
+#         """
+#         # Get the infrastructure for the current PG instance
+#         nodes = instance.get_infra()
+
+#         # Don't give actual password to dataplane, just hash it
+#         password_hash = passwd.scram_sha_256(instance.password)
+
+#         # Create the same derivatives database objects as nodes in the node set
+#         return tuple(
+#             models.PGUserNode(
+#                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
+#                 name=instance.name,
+#                 instance=instance,
+#                 password_hash=password_hash,
+#             )
+#             for node in nodes
+#         )
+
+
+# class PGDatabaseBuilder(PaaSBuilder):
+
+#     def __init__(
+#         self,
+#         instance_model: tp.Type[models.PGDatabase] = models.PGDatabase,
+#     ):
+#         super().__init__(instance_model)
+
+#     def create_paas_objects(
+#         self, instance: models.PGDatabase
+#     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
+#         """Create a list of PaaS objects.
+
+#         The method returns a list of PaaS objects that are required
+#         for the instance.
+#         """
+#         # Get the infrastructure for the current PG instance
+#         nodes = instance.get_infra()
+
+#         # Create the same derivatives database objects as nodes in the node set
+#         return tuple(
+#             models.PGDatabaseNode(
+#                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
+#                 name=instance.name,
+#                 instance=instance,
+#                 owner=instance.owner.name,
+#             )
+#             for node in nodes
+#         )
 
 
 # class PGSUserPrivilegeBuilder(builder.PaaSBuilder):
@@ -192,7 +268,7 @@ class PGDatabaseBuilder(PaaSBuilder):
 #         for the instance.
 #         """
 #         # Get the infrastructure for the current PG instance
-#         nodes = instance.get_infra()[1:]
+#         nodes = instance.get_infra()
 
 #         # Create the same derivatives database objects as nodes in the node set
 #         return tuple(

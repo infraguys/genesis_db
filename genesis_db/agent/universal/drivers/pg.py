@@ -40,6 +40,10 @@ from genesis_db.common.pg_auth import passwd
 
 LOG = logging.getLogger(__name__)
 
+# NOTE: don't forget to update validation in controlplane
+PG_SYSTEM_USERS_REGEX_TMPL = "'^(pg_|dbaas_|postgres$)'"
+PG_SYSTEM_DATABASES_TMPL = "('postgres', 'template0', 'template1')"
+
 
 def get_ttl_hash(seconds=600):
     """Return the same value withing `seconds` time period"""
@@ -99,99 +103,17 @@ def on_primary_only(method):
     return _impl
 
 
-class PGUser(meta.MetaDataPlaneModel):
-
-    name = properties.property(ra_types.String(min_length=1, max_length=64))
-    password_hash = properties.property(
-        ra_types.String(min_length=8, max_length=256)
-    )
-
-    _meta_fields = {"uuid", "name"}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.c = ClientsSingleton()
-
-    def get_meta_model_fields(self) -> set[str] | None:
-        return self._meta_fields
-
-    @on_primary_only
-    def dump_to_dp(self) -> None:
-        res = self.c.psql.execute(
-            "SELECT rolname, rolpassword FROM pg_authid WHERE rolname=%s",
-            (self.name,),
-        ).fetchall()
-
-        escaped_password = "'{}'".format(self.password_hash.replace("'", "''"))
-
-        if len(res) == 0:
-            self.c.psql.execute(
-                sql.SQL(
-                    "CREATE USER {username} WITH PASSWORD {password}"
-                ).format(
-                    username=sql.Identifier(self.name),
-                    password=sql.Literal(
-                        self.password_hash.replace("'", "''")
-                    ),
-                )
-            )
-
-            LOG.info("User %s created", self.name)
-            return
-
-        dname, dpasshash = res[0]
-
-        if self.password_hash != dpasshash:
-            self.c.psql.execute(
-                sql.SQL(
-                    "ALTER USER {username} WITH PASSWORD {password}"
-                ).format(
-                    username=sql.Identifier(self.name),
-                    password=sql.Literal(
-                        self.password_hash.replace("'", "''")
-                    ),
-                )
-            )
-
-            LOG.info("User %s: password updated", self.name)
-            return
-
-        LOG.info("User %s with actual pass already exists", self.name)
-        return
-
-    @on_primary_only
-    def restore_from_dp(self) -> None:
-        res = self.c.psql.execute(
-            "SELECT rolname, rolpassword FROM pg_authid WHERE rolname=%s",
-            (self.name,),
-        ).fetchall()
-
-        if len(res) != 1:
-            resource = self.to_ua_resource("pg_user_node")
-            raise driver_exc.ResourceNotFound(resource=resource)
-
-        self.password_hash = res[0][1]
-
-    @on_primary_only
-    def delete_from_dp(self) -> None:
-        self.c.psql.execute(
-            sql.SQL("DROP USER IF EXISTS {}").format(sql.Identifier(self.name))
-        )
-
-        LOG.info("User %s dropped", self.name)
-
-    @on_primary_only
-    def update_on_dp(self) -> None:
-        self.dump_to_dp()
-
-
-class PGDatabase(meta.MetaDataPlaneModel):
+class PGInstance(meta.MetaDataPlaneModel):
 
     name = properties.property(
         ra_types.String(min_length=1, max_length=512),
         required=True,
     )
-    owner = properties.property(ra_types.String(min_length=1, max_length=64))
+    databases = properties.property(ra_types.Dict(), default={})
+    users = properties.property(ra_types.Dict(), default={})
+    sync_replica_number = properties.property(
+        ra_types.Integer(min_value=0, max_value=15)
+    )
 
     _meta_fields = {"uuid", "name"}
 
@@ -202,152 +124,148 @@ class PGDatabase(meta.MetaDataPlaneModel):
     def get_meta_model_fields(self) -> set[str] | None:
         return self._meta_fields
 
-    @on_primary_only
-    def dump_to_dp(self) -> None:
-        res = self.c.psql.execute(
-            """\
+    def _reconcile_target_users(self):
+        actual_users = {
+            r[0]: r[1]
+            for r in self.c.psql.execute(
+                f"SELECT rolname, rolpassword FROM pg_authid WHERE rolname !~ {PG_SYSTEM_USERS_REGEX_TMPL}"
+            ).fetchall()
+        }
+
+        for tname, t in self.users.items():
+            if tname not in actual_users:
+                self.c.psql.execute(
+                    sql.SQL(
+                        "CREATE USER {username} WITH PASSWORD {password}"
+                    ).format(
+                        username=sql.Identifier(tname),
+                        password=sql.Literal(t["pw_hash"].replace("'", "''")),
+                    )
+                )
+
+                LOG.info("User %s created", tname)
+                continue
+
+            if t["pw_hash"] != actual_users[tname]:
+                self.c.psql.execute(
+                    sql.SQL(
+                        "ALTER USER {username} WITH PASSWORD {password}"
+                    ).format(
+                        username=sql.Identifier(tname),
+                        password=sql.Literal(t["pw_hash"].replace("'", "''")),
+                    )
+                )
+
+                LOG.info("User %s: password updated", tname)
+                continue
+
+            LOG.info("User %s with actual password already exists", tname)
+
+        # Clean up deleted users
+        for aname in actual_users:
+            if aname not in self.users:
+                self.c.psql.execute(
+                    sql.SQL("DROP USER IF EXISTS {}").format(
+                        sql.Identifier(aname)
+                    )
+                )
+
+                LOG.info("User %s dropped", aname)
+
+    def _fill_actual_users(self):
+        actual_users = {
+            r[0]: r[1]
+            for r in self.c.psql.execute(
+                f"SELECT rolname, rolpassword FROM pg_authid WHERE rolname !~ {PG_SYSTEM_USERS_REGEX_TMPL}"
+            ).fetchall()
+        }
+
+        for aname, apass in actual_users.items():
+            self.users[aname] = {"pw_hash": apass}
+
+    def _reconcile_target_databases(self):
+        actual_dbs = {
+            r[0]: r[1]
+            for r in self.c.psql.execute(
+                """\
 SELECT d.datname as "name",
 pg_catalog.pg_get_userbyid(d.datdba) as "owner"
 FROM pg_catalog.pg_database d
-WHERE d.datname = %s""",
-            (self.name,),
-        ).fetchall()
+WHERE d.datname not in """
+                + PG_SYSTEM_DATABASES_TMPL
+            ).fetchall()
+        }
 
-        if len(res) == 1:
-            LOG.info("Database %s already exists", self.name)
+        for tname, t in self.databases.items():
+            if tname in actual_dbs:
+                LOG.info("Database %s already exists", tname)
 
-            if res[0][1] != self.owner:
+                if actual_dbs[tname] != t["owner"]:
+                    self.c.psql.execute(
+                        sql.SQL("ALTER DATABASE {} OWNER TO {}").format(
+                            sql.Identifier(tname), sql.Literal(t["owner"])
+                        )
+                    )
+                    LOG.info(
+                        "Owner of database %s altered to %s", tname, t["owner"]
+                    )
+
+                continue
+
+            self.c.psql.execute(
+                sql.SQL("CREATE DATABASE {} OWNER {}").format(
+                    sql.Identifier(tname), sql.Literal(t["owner"])
+                )
+            )
+
+            LOG.info("Database %s created", tname)
+
+        # Clean up deleted DBs
+        for a in actual_dbs:
+            if a not in self.databases:
                 self.c.psql.execute(
-                    sql.SQL("ALTER DATABASE {} OWNER TO {}").format(
-                        sql.Identifier(self.name), sql.Literal(self.owner)
+                    sql.SQL("DROP DATABASE IF EXISTS {}").format(
+                        sql.Identifier(self.name)
                     )
                 )
-                LOG.info(
-                    "Owner of database %s altered to %s", self.name, self.owner
-                )
 
-            return
+                LOG.info("Database %s dropped", self.name)
 
-        self.c.psql.execute(
-            sql.SQL("CREATE DATABASE {} OWNER {}").format(
-                sql.Identifier(self.name), sql.Literal(self.owner)
-            )
-        )
+    def _fill_actual_databases(self):
+        actual_dbs = {
+            r[0]: r[1]
+            for r in self.c.psql.execute(
+                """\
+SELECT d.datname as "name",
+pg_catalog.pg_get_userbyid(d.datdba) as "owner"
+FROM pg_catalog.pg_database d
+WHERE d.datname not in """
+                + PG_SYSTEM_DATABASES_TMPL
+            ).fetchall()
+        }
 
-        LOG.info("Database %s created", self.name)
+        for aname, aowner in actual_dbs.items():
+            self.databases[aname] = {"owner": aowner}
+
+    @on_primary_only
+    def dump_to_dp(self) -> None:
+        self._reconcile_target_users()
+        self._reconcile_target_databases()
 
     @on_primary_only
     def restore_from_dp(self) -> None:
-        res = self.c.psql.execute(
-            """\
-SELECT d.datname as "name",
-pg_catalog.pg_get_userbyid(d.datdba) as "owner"
-FROM pg_catalog.pg_database d
-WHERE d.datname = %s""",
-            (self.name,),
-        ).fetchall()
-
-        if len(res) != 1:
-            resource = self.to_ua_resource("pg_database_node")
-            raise driver_exc.ResourceNotFound(resource=resource)
-
-        self.owner = res[0][1]
+        self._fill_actual_users()
+        self._fill_actual_databases()
 
     @on_primary_only
     def delete_from_dp(self) -> None:
-        self.c.psql.execute(
-            sql.SQL("DROP DATABASE IF EXISTS {}").format(
-                sql.Identifier(self.name)
-            )
-        )
-
-        LOG.info("Database %s dropped", self.name)
+        # Instance exists along with nodes, so there's nothing to delete
+        # TODO: maybe node draining on cluster shrink should be here?
+        pass
 
     @on_primary_only
     def update_on_dp(self) -> None:
         self.dump_to_dp()
-
-
-# class Privilege(meta.MetaDataPlaneModel):
-
-#     database = properties.property(
-#         ra_types.String(min_length=1, max_length=255)
-#     )
-#     username = properties.property(
-#         ra_types.String(min_length=1, max_length=64)
-#     )
-#     kind = properties.property(ra_types.String())
-#     kind_name = properties.property(ra_types.String())
-#     privileges = properties.property(ra_types.List())
-
-#     _meta_fields = {
-#         "uuid",
-#         "database",
-#         "username",
-#         "kind",
-#         "kind_name",
-#         "privileges",
-#     }
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.c = ClientsSingleton()
-
-#     def get_meta_model_fields(self) -> set[str] | None:
-#         return self._meta_fields
-
-#     @on_primary_only
-#     def dump_to_dp(self) -> None:
-#         # res = self.c.psql.execute(
-#         #     "SELECT rolname, rolpassword FROM pg_authid WHERE rolname=%s",
-#         #     (self.name,),
-#         # ).fetchall()
-
-#         # if len(res) == 0:
-#         #     self.c.psql.execute(
-#         #         "create user %s with password %s; ", (self.name, self.password)
-#         #     )
-
-#         #     LOG.info("User %s created", self.name)
-#         #     return
-
-#         # dname, dpasshash = res[0]
-
-#         # if not passwd.verify_password(dname, self.password, dpasshash):
-#         #     self.c.psql.execute(
-#         #         "ALTER USER %s WITH PASSWORD %s", (self.name, self.password)
-#         #     )
-
-#         #     LOG.info("User %s: password updated", self.name)
-#         #     return
-
-#         # LOG.info("User %s with actual pass already exists", self.name)
-#         return
-
-#     @on_primary_only
-#     def restore_from_dp(self) -> None:
-#         # res = self.c.psql.execute(
-#         #     "SELECT rolname, rolpassword FROM pg_authid WHERE rolname= %s",
-#         #     (self.name,),
-#         # ).fetchall()
-
-#         # if len(res) != 1:
-#         #     resource = self.to_ua_resource("user")
-#         #     raise driver_exc.ResourceNotFound(resource=resource)
-
-#         pass
-
-#         # TODO: what to do with password?
-
-#     @on_primary_only
-#     def delete_from_dp(self) -> None:
-#         self.c.psql.execute("DROP USER IF EXISTS %s", (self.name,))
-
-#         LOG.info("User %s dropped", self.name)
-
-#     @on_primary_only
-#     def update_on_dp(self) -> None:
-#         self.dump_to_dp()
 
 
 class PGCapabilityDriver(meta.MetaFileStorageAgentDriver):
@@ -355,7 +273,9 @@ class PGCapabilityDriver(meta.MetaFileStorageAgentDriver):
 
     PG_META_PATH = "/var/lib/genesis/genesis_db/pg_meta.json"
 
-    __model_map__ = {"pg_database_node": PGDatabase, "pg_user_node": PGUser}
+    __model_map__ = {
+        "pg_instance_node": PGInstance,
+    }
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, meta_file=self.PG_META_PATH, **kwargs)

@@ -29,21 +29,22 @@ from genesis_db.user_api.dm import models
 LOG = logging.getLogger(__name__)
 
 
-class PGUserNode(
+class PGInstanceNode(
     ra_models.ModelWithUUID,
-    ra_models.ModelWithNameDesc,
-    ra_models.ModelWithTimestamp,
     ua_models.TargetResourceKindAwareMixin,
 ):
+    # TODO(akremenetsky): We already have name in the parent model
     name = properties.property(ra_types.String(min_length=1, max_length=64))
-    password_hash = properties.property(
-        ra_types.String(min_length=8, max_length=256)
+    databases = properties.property(ra_types.Dict())
+    users = properties.property(ra_types.Dict())
+    sync_replica_number = properties.property(
+        ra_types.Integer(min_value=0, max_value=15)
     )
 
     @classmethod
     def get_resource_kind(cls) -> str:
         """Return the resource kind."""
-        return "pg_user_node"
+        return "pg_instance_node"
 
     def get_resource_target_fields(self) -> tp.Collection[str]:
         """Return the collection of target fields.
@@ -54,25 +55,27 @@ class PGUserNode(
             (
                 "uuid",
                 "name",
-                "password_hash",
+                "sync_replica_number",
+                "databases",
+                "users",
             )
         )
 
 
-class PGUser(
-    models.PGUser,
+class PGInstance(
+    models.PGInstance,
     ua_models.InstanceWithDerivativesMixin,
 ):
 
     __master_model__ = sdk_models.NodeSet
     __derivative_model_map__ = {
-        "pg_user_node": PGUserNode,
+        "pg_instance_node": PGInstanceNode,
     }
 
     @classmethod
     def get_resource_kind(cls) -> str:
         """Return the resource kind."""
-        return "pg_user"
+        return "pg_instance"
 
     def get_resource_target_fields(self) -> tp.Collection[str]:
         """Return the collection of target fields.
@@ -83,8 +86,7 @@ class PGUser(
             (
                 "uuid",
                 "name",
-                "instance",
-                "password",
+                "sync_replica_number",
             )
         )
 
@@ -92,86 +94,13 @@ class PGUser(
         # TODO(akremenetsky): Temporarily solution since we don't have sets
         # support yet
 
-        node_set = sdk_models.NodeSet.get_one_from_resource_storage(
-            self.instance.uuid
-        )
+        # node_set = sdk_models.NodeSet.get_one_from_resource_storage(self.uuid)
 
         # Need to filter nodes by node_set.uuid
         nodes = sdk_models.Node.get_all_from_resource_storage()
 
-        return [node_set] + list(nodes)
-
-
-class PGDatabaseNode(
-    ra_models.ModelWithUUID,
-    ra_models.ModelWithNameDesc,
-    ra_models.ModelWithTimestamp,
-    ua_models.TargetResourceKindAwareMixin,
-):
-    # TODO(akremenetsky): We already have name in the parent model
-    name = properties.property(ra_types.String(min_length=1, max_length=64))
-    owner = properties.property(ra_types.String(min_length=1, max_length=64))
-
-    @classmethod
-    def get_resource_kind(cls) -> str:
-        """Return the resource kind."""
-        return "pg_database_node"
-
-    def get_resource_target_fields(self) -> tp.Collection[str]:
-        """Return the collection of target fields.
-
-        Refer to the Resource model for more details about target fields.
-        """
-        return frozenset(
-            (
-                "uuid",
-                "name",
-                "owner",
-            )
-        )
-
-
-class PGDatabase(
-    models.PGDatabase,
-    ua_models.InstanceWithDerivativesMixin,
-):
-
-    __master_model__ = sdk_models.NodeSet
-    __derivative_model_map__ = {
-        "pg_database_node": PGDatabaseNode,
-    }
-
-    @classmethod
-    def get_resource_kind(cls) -> str:
-        """Return the resource kind."""
-        return "pg_database"
-
-    def get_resource_target_fields(self) -> tp.Collection[str]:
-        """Return the collection of target fields.
-
-        Refer to the Resource model for more details about target fields.
-        """
-        return frozenset(
-            (
-                "uuid",
-                "name",
-                "instance",
-                "owner",
-            )
-        )
-
-    def get_infra(self) -> tp.Collection[sdk_models.NodeSet | sdk_models.Node]:
-        # TODO(akremenetsky): Temporarily solution since we don't have sets
-        # support yet
-
-        node_set = sdk_models.NodeSet.get_one_from_resource_storage(
-            self.instance.uuid
-        )
-
-        # Need to filter nodes by node_set.uuid
-        nodes = sdk_models.Node.get_all_from_resource_storage()
-
-        return [node_set] + list(nodes)
+        # return [node_set] + list(nodes)
+        return list(nodes)
 
 
 # class PGUserPrivilegeNode(

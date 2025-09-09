@@ -17,6 +17,7 @@
 import enum
 import re
 
+from restalchemy.dm import filters as dm_filters
 from restalchemy.dm import models
 from restalchemy.dm import properties
 from restalchemy.dm import relationships
@@ -37,6 +38,14 @@ class PGStatus(str, enum.Enum):
 class PGNameType(types.BaseCompiledRegExpTypeFromAttr):
     # https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
     pattern = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]{0,62}$")
+
+
+class PGRoleNameType(types.BaseCompiledRegExpTypeFromAttr):
+    # NOTE: don't forget to update dataplane filters too!
+    # pg_*, dbaas_*, postgres are reserved names (use dbaas_* for our needs)
+    pattern = re.compile(
+        r"^(?!pg_)(?!dbaas_)(?!postgres$)[a-zA-Z_][a-zA-Z0-9_$]{0,62}$"
+    )
 
 
 class PGVersion(
@@ -73,12 +82,24 @@ class PGInstance(
     nodes_number = properties.property(
         types.Integer(min_value=1, max_value=16)
     )
+    # TODO: support it's change on dataplane
     sync_replica_number = properties.property(
-        types.Integer(min_value=0, max_value=15)
+        types.Integer(min_value=0, max_value=15), default=1, read_only=True
     )
+    # TODO: support version update
     version = relationships.relationship(
         PGVersion, required=True, read_only=True
     )
+
+    def get_users(self, session=None):
+        return PGUser.objects.get_all(
+            session=session, filters={"instance": dm_filters.EQ(self)}
+        )
+
+    def get_databases(self, session=None):
+        return PGDatabase.objects.get_all(
+            session=session, filters={"instance": dm_filters.EQ(self)}
+        )
 
     def delete(self, session=None, **kwargs):
         u.remove_nested_dm(PGDatabase, "instance", self, session=session)
@@ -86,50 +107,56 @@ class PGInstance(
         return super().delete(session=session, **kwargs)
 
 
-class PGUser(
+class InstanceChildModel(
     models.ModelWithUUID,
     models.ModelWithNameDesc,
     models.ModelWithTimestamp,
     orm.SQLStorableMixin,
 ):
-
-    __tablename__ = "postgres_users"
-    # TODO: restrict system users (postgres, replicator, rewind_user)
-    name = properties.property(PGNameType(), required=True, read_only=True)
-    status = properties.property(
-        types.Enum([status.value for status in PGStatus]),
-        default=PGStatus.NEW.value,
-    )
-    password = properties.property(types.String(min_length=8, max_length=99))
     instance = relationships.relationship(
         PGInstance, required=True, read_only=True
     )
 
+    def touch_parent(self, session=None):
+        # Now we enforce dataplane updates via parent model, so we don't need
+        #  to implement explicit child entities' resources on dataplane level
+        # TODO: optimize and bump only updated_at
+        self.instance.update(force=True)
+
+    def insert(self, session=None):
+        super().insert(session=session)
+        self.touch_parent(session=session)
+
+    def update(self, session=None, force=False):
+        super().update(session=session, force=force)
+        self.touch_parent(session=session)
+
     def delete(self, session=None, **kwargs):
-        # u.remove_nested_dm(PGUserPrivilege, "user", self, session=session)
-        return super().delete(session=session, **kwargs)
+        res = super().delete(session=session, **kwargs)
+        self.touch_parent(session=session)
+        return res
 
 
-class PGDatabase(
-    models.ModelWithUUID,
-    models.ModelWithNameDesc,
-    models.ModelWithTimestamp,
-    orm.SQLStorableMixin,
-):
+class PGUser(InstanceChildModel):
+    __tablename__ = "postgres_users"
 
+    name = properties.property(PGRoleNameType(), required=True, read_only=True)
+    status = properties.property(
+        types.Enum([status.value for status in PGStatus]),
+        default=PGStatus.ACTIVE.value,
+    )
+    password = properties.property(types.String(min_length=8, max_length=99))
+
+
+class PGDatabase(InstanceChildModel):
     __tablename__ = "postgres_databases"
 
     name = properties.property(PGNameType(), required=True)
     status = properties.property(
         types.Enum([status.value for status in PGStatus]),
-        default=PGStatus.NEW.value,
+        default=PGStatus.ACTIVE.value,
     )
-    instance = relationships.relationship(PGInstance, required=True)
     owner = relationships.relationship(PGUser, required=True)
-
-    def delete(self, session=None, **kwargs):
-        # u.remove_nested_dm(PGUserPrivilege, "database", self, session=session)
-        return super().delete(session=session, **kwargs)
 
 
 # class PGDatabasePrivilege(str, enum.Enum):

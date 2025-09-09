@@ -85,8 +85,9 @@ class GeneralService(basic.BasicService):
 
         # PaaS builders
         for builder in (
-            paas_builder.PGUserBuilder,
-            paas_builder.PGDatabaseBuilder,
+            paas_builder.PGInstanceBuilder,
+            # paas_builder.PGUserBuilder,
+            # paas_builder.PGDatabaseBuilder,
             # paas_builder.PGSUserPrivilegeBuilder,
         ):
             self._services.append(builder())

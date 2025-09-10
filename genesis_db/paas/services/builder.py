@@ -59,44 +59,6 @@ class PaaSBuilder(builder.PaaSBuilder):
             scheduled[agent_uuid] = [node_entity]
         return scheduled
 
-    def actualize_paas_objects_source_data_plane(
-        self,
-        instance: ua_models.InstanceWithDerivativesMixin,
-        paas_collection: builder.PaaSCollection,
-    ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-        """Actualize the PaaS objects. Changes from the data plane.
-
-        The method is called when the instance is outdated. For example,
-        the instance `Database` has derivative `PGDatabase`. Single `Database`
-        may have multiple `PGDatabase` derivatives. If any of the derivatives
-        is outdated, this method is called to reactualize this PaaS objects.
-
-        Args:
-            instance: The instance to actualize.
-            paas_objects: The actual PaaS objects.
-        """
-        return paas_collection.targets()
-
-    def actualize_paas_objects_source_master(
-        self,
-        instance: ua_models.InstanceWithDerivativesMixin,
-        master_instance: ua_models.InstanceWithDerivativesMixin,
-        paas_collection: builder.PaaSCollection,
-    ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-        """Actualize the PaaS objects. Changes from the master instance.
-
-        The method is called when the instance is outdated from master
-        instance point of view. For example, the instance `Database` is linked to the
-        `NodeSet` instance. If the `NodeSet` is outdated, this method is called
-        to reactualize the `Database` instance.
-
-        Args:
-            instance: The instance to actualize.
-            master_instance: The master instance.
-            paas_collection: The actual PaaS objects.
-        """
-        return paas_collection.targets()
-
 
 class PGInstanceBuilder(PaaSBuilder):
 
@@ -152,9 +114,7 @@ class PGInstanceBuilder(PaaSBuilder):
     def actualize_paas_objects(
         self,
         instance: models.PGInstance,
-        resources: tp.Collection[
-            ua_models.TargetResourceKindAwareMixin
-        ] = tuple(),
+        paas_collection: builder.PaaSCollection,
     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
         """Basic update, all derivatives are non-unique"""
 
@@ -165,7 +125,7 @@ class PGInstanceBuilder(PaaSBuilder):
         databases = self._get_databases(instance)
 
         # Support only PGInstanceNode
-        for res in resources:
+        for res in paas_collection.targets():
             if not isinstance(res, models.PGInstanceNode):
                 LOG.warning(
                     "PGInstanceBuilder doesn't support %s model type",

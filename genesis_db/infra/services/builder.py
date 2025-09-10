@@ -168,19 +168,25 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
 
         # Update config content
         for target, _ in infra.infra_objects:
-            if target.get_resource_kind() != CONFIG_KIND:
-                continue
-            node = nodes[target.target.node]
-            content = PATRONI_CONF_TEMPLATE.format(
-                cluster_name=instance.name,
-                node_name=node.name,
-                node_ip=node.default_network.get("ipv4", ""),
-                raft_partner_addrs=node_raft_members,
-                sync_mode=sync_mode,
-                sync_replica_number=instance.sync_replica_number,
-            )
-            if target.body.content != content:
-                target.body.content = content
+            if target.get_resource_kind() == CONFIG_KIND:
+                node = nodes[target.target.node]
+                content = PATRONI_CONF_TEMPLATE.format(
+                    cluster_name=instance.name,
+                    node_name=node.name,
+                    node_ip=node.default_network.get("ipv4", ""),
+                    raft_partner_addrs=node_raft_members,
+                    sync_mode=sync_mode,
+                    sync_replica_number=instance.sync_replica_number,
+                )
+                if target.body.content != content:
+                    target.body.content = content
+            elif target.get_resource_kind() == NODE_KIND:
+                target.cores = instance.cpu
+                target.ram = instance.ram
+                target.image = instance.version.image
+                # This action wipe out the disk.
+                # Rethink this part when we have persistent volumes.
+                # target.root_disk_size = instance.disk_size
 
         if all(
             config.status == sdk_c.InstanceStatus.ACTIVE.value

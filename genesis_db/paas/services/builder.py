@@ -19,6 +19,7 @@ import uuid as sys_uuid
 import typing as tp
 
 from gcl_sdk.paas.services import builder
+from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
 from gcl_sdk.agents.universal import utils
@@ -98,6 +99,8 @@ class PGInstanceBuilder(PaaSBuilder):
 
         databases = self._get_databases(instance)
 
+        instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
+
         # Create the same derivatives database objects as nodes in the node set
         return tuple(
             models.PGInstanceNode(
@@ -141,105 +144,14 @@ class PGInstanceBuilder(PaaSBuilder):
                 setattr(res, k, v)
             actual_resources.append(res)
 
+        if all(
+            actual_res.status == sdk_c.InstanceStatus.ACTIVE.value
+            and len(actual_res.users) == len(users)
+            and len(actual_res.databases) == len(databases)
+            for actual_res in paas_collection.actuals()
+        ):
+            instance.status = sdk_c.InstanceStatus.ACTIVE.value
+        else:
+            instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
+
         return actual_resources
-
-
-# class PGUserBuilder(PaaSBuilder):
-
-#     def __init__(
-#         self,
-#         instance_model: tp.Type[models.PGUser] = models.PGUser,
-#     ):
-#         super().__init__(instance_model)
-
-#     def create_paas_objects(
-#         self, instance: models.PGUser
-#     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-#         """Create a list of PaaS objects.
-
-#         The method returns a list of PaaS objects that are required
-#         for the instance.
-#         """
-#         # Get the infrastructure for the current PG instance
-#         nodes = instance.get_infra()
-
-#         # Don't give actual password to dataplane, just hash it
-#         password_hash = passwd.scram_sha_256(instance.password)
-
-#         # Create the same derivatives database objects as nodes in the node set
-#         return tuple(
-#             models.PGUserNode(
-#                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
-#                 name=instance.name,
-#                 instance=instance,
-#                 password_hash=password_hash,
-#             )
-#             for node in nodes
-#         )
-
-
-# class PGDatabaseBuilder(PaaSBuilder):
-
-#     def __init__(
-#         self,
-#         instance_model: tp.Type[models.PGDatabase] = models.PGDatabase,
-#     ):
-#         super().__init__(instance_model)
-
-#     def create_paas_objects(
-#         self, instance: models.PGDatabase
-#     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-#         """Create a list of PaaS objects.
-
-#         The method returns a list of PaaS objects that are required
-#         for the instance.
-#         """
-#         # Get the infrastructure for the current PG instance
-#         nodes = instance.get_infra()
-
-#         # Create the same derivatives database objects as nodes in the node set
-#         return tuple(
-#             models.PGDatabaseNode(
-#                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
-#                 name=instance.name,
-#                 instance=instance,
-#                 owner=instance.owner.name,
-#             )
-#             for node in nodes
-#         )
-
-
-# class PGSUserPrivilegeBuilder(builder.PaaSBuilder):
-
-#     def __init__(
-#         self,
-#         instance_model: tp.Type[
-#             models.PGUserPrivilege
-#         ] = models.PGUserPrivilege,
-#     ):
-#         super().__init__(instance_model)
-
-#     def create_paas_objects(
-#         self, instance: models.PGDatabase
-#     ) -> tp.Collection[ua_models.TargetResourceKindAwareMixin]:
-#         """Create a list of PaaS objects.
-
-#         The method returns a list of PaaS objects that are required
-#         for the instance.
-#         """
-#         # Get the infrastructure for the current PG instance
-#         nodes = instance.get_infra()
-
-#         # Create the same derivatives database objects as nodes in the node set
-#         return tuple(
-#             models.PGUserPrivilegeNode(
-#                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
-#                 database=instance.database.name,
-#                 username=instance.name,
-#                 instance=instance,
-#                 kind=instance.kind.KIND,
-#                 kind_name=instance.kind.name,
-#                 privileges=instance.kind.privileges,
-#             )
-#             for node in nodes
-#         )

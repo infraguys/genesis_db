@@ -33,10 +33,6 @@ CONFIG_KIND = sdk_models.Config.get_resource_kind()
 PATRONI_RAFT_PORT = 5010
 
 
-# RAFT_PARTNER_ADDRS="[10.20.0.20:5010,10.20.0.21:5010,10.20.0.22:5010]"
-# CLUSTER_NAME="cluster-1"
-# MY_NAME=$(hostname --short)
-# MY_IP=$(hostname -I | awk ' {print $1}')
 PATRONI_CONF_TEMPLATE = """\
 scope: {cluster_name}
 namespace: /db/
@@ -149,7 +145,7 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             infra: The infrastructure objects.
         """
         nodes = {}
-        configs = []
+        # configs = []
 
         for target, actual in infra.infra_objects:
             # TODO: rework when nodeset is implemented
@@ -157,8 +153,8 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                 continue
             if actual.get_resource_kind() == NODE_KIND:
                 nodes[actual.uuid] = actual
-            elif actual.get_resource_kind() == CONFIG_KIND:
-                configs.append(actual)
+            # elif actual.get_resource_kind() == CONFIG_KIND:
+            #     configs.append(actual)
 
         node_raft_members = [
             f"{node.default_network.get("ipv4", "")}:{PATRONI_RAFT_PORT}"
@@ -187,14 +183,6 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                 # This action wipe out the disk.
                 # Rethink this part when we have persistent volumes.
                 # target.root_disk_size = instance.disk_size
-
-        if all(
-            config.status == sdk_c.InstanceStatus.ACTIVE.value
-            for config in configs
-        ):
-            instance.status = sdk_c.InstanceStatus.ACTIVE.value
-        else:
-            instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
 
         # Return the target resources
         return infra.targets()

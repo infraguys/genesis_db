@@ -91,20 +91,6 @@ class PGDatabaseController(
     )
 
 
-# class DatabaseInstanceController(
-#     iam_controllers.NestedPolicyBasedController,
-#     ra_controllers.BaseNestedResourceControllerPaginated,
-# ):
-#     __policy_service_name__ = "genesis_db"
-#     __policy_name__ = "database_instance"
-
-#     __resource__ = ra_resources.ResourceByRAModel(
-#         model_class=models.DatabaseInstance,
-#         convert_underscore=False,
-#         process_filters=True,
-#     )
-
-
 class PGUserController(
     iam_controllers.NestedPolicyBasedController,
     ra_controllers.BaseNestedResourceControllerPaginated,
@@ -118,18 +104,3 @@ class PGUserController(
         convert_underscore=False,
         process_filters=True,
     )
-
-
-# class PGUserPrivilegeController(
-#     iam_controllers.NestedPolicyBasedController,
-#     ra_controllers.BaseNestedResourceControllerPaginated,
-# ):
-#     __policy_service_name__ = "genesis_db"
-#     __policy_name__ = "role_privilege"
-#     __pr_name__ = "user"
-
-#     __resource__ = ra_resources.ResourceByRAModel(
-#         model_class=models.PGUserPrivilege,
-#         convert_underscore=False,
-#         process_filters=True,
-#     )

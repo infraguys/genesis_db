@@ -19,22 +19,12 @@ from restalchemy.api import routes
 from genesis_db.user_api.api import controllers
 
 
-# class DatabaseInstanceRoute(routes.Route):
-#     __controller__ = controllers.DatabaseInstanceController
-
-
 class PGDatabaseRoute(routes.Route):
     __controller__ = controllers.PGDatabaseController
 
 
-# class PGUserPrivilegeRoute(routes.Route):
-#     __controller__ = controllers.PGUserPrivilegeController
-
-
 class PGUserRoute(routes.Route):
     __controller__ = controllers.PGUserController
-
-    # privileges = routes.route(PGUserPrivilegeRoute, resource_route=True)
 
 
 class PGInstanceRoute(routes.Route):

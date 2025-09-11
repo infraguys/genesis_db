@@ -27,6 +27,7 @@ from gcl_sdk.agents.universal.drivers import base
 from gcl_sdk.agents.universal.drivers import meta
 from gcl_sdk.agents.universal.drivers import exceptions as driver_exc
 from gcl_sdk.agents.universal import constants as c
+from gcl_sdk.infra import constants as pc
 import psycopg
 from psycopg import sql
 
@@ -113,6 +114,10 @@ class PGInstance(meta.MetaDataPlaneModel):
     users = properties.property(ra_types.Dict(), default={})
     sync_replica_number = properties.property(
         ra_types.Integer(min_value=0, max_value=15)
+    )
+    status = properties.property(
+        ra_types.Enum([s.value for s in pc.InstanceStatus]),
+        default=pc.NodeStatus.ACTIVE.value,
     )
 
     _meta_fields = {"uuid", "name"}

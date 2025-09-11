@@ -89,7 +89,7 @@ postgresql:
   parameters:
     unix_socket_directories: '/var/run/postgresql,/tmp'
   pg_hba:
-  - host replication replicator 0.0.0.0/0 scram-sha-256
+  - host replication dbaas_replicator 0.0.0.0/0 scram-sha-256
   - host all all 0.0.0.0/0 scram-sha-256
   - local all all peer map=genesis_map
   pg_ident:
@@ -156,6 +156,17 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             # elif actual.get_resource_kind() == CONFIG_KIND:
             #     configs.append(actual)
 
+        new_objects = []
+
+        # TODO: support cluster shrink? We should support it in dataplane too
+        for i in range(instance.nodes_number):
+            nuuid = sys_uuid.uuid5(instance.uuid, f"node-{i}")
+            if nuuid in nodes:
+                continue
+            node, config = instance._create_node_config(i, self._project_id)
+            new_objects.append(node)
+            new_objects.append(config)
+
         node_raft_members = [
             f"{node.default_network.get("ipv4", "")}:{PATRONI_RAFT_PORT}"
             for node in nodes.values()
@@ -173,6 +184,7 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                     raft_partner_addrs=node_raft_members,
                     sync_mode=sync_mode,
                     sync_replica_number=instance.sync_replica_number,
+                    on_change=instance.OnReloadFunc,
                 )
                 if target.body.content != content:
                     target.body.content = content
@@ -185,4 +197,6 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                 # target.root_disk_size = instance.disk_size
 
         # Return the target resources
+        if new_objects:
+            return (*infra.targets(), *new_objects)
         return infra.targets()

@@ -25,7 +25,7 @@ build:
       exclude:
         - .venv
         - .tox
-    
+
     # Take SDK from a local path for development purposes.
     - dst: /opt/gcl_sdk
       optional: true
@@ -37,7 +37,7 @@ build:
     # List of images in the element
     - images:
       - name: genesis-db
-        format: raw
+        format: gz
         profile: genesis_base
         script: images/cp_install.sh
 
@@ -45,7 +45,7 @@ build:
         override:
           disk_size: "6G"
       - name: genesis-db-pg
-        format: raw
+        format: gz
         profile: genesis_base
         script: images/pg_install.sh
 

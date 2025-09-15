@@ -176,7 +176,7 @@ class PGInstance(meta.MetaDataPlaneModel):
                         )
                     )
                 except psycopg.errors.DependentObjectsStillExist:
-                    LOG.info(
+                    LOG.warning(
                         "User %s can't be deleted now due to existing "
                         "dependencies, will try later",
                         aname,

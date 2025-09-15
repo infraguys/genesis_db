@@ -145,7 +145,8 @@ class PGInstanceBuilder(PaaSBuilder):
             actual_resources.append(res)
 
         if all(
-            actual_res.status == sdk_c.InstanceStatus.ACTIVE.value
+            actual_res  # may not exist yet
+            and actual_res.status == sdk_c.InstanceStatus.ACTIVE.value
             and len(actual_res.users) == len(users)
             and len(actual_res.databases) == len(databases)
             for actual_res in paas_collection.actuals()

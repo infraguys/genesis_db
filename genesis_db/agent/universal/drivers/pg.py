@@ -169,11 +169,19 @@ class PGInstance(meta.MetaDataPlaneModel):
         # Clean up deleted users
         for aname in actual_users:
             if aname not in self.users:
-                self.c.psql.execute(
-                    sql.SQL("DROP USER IF EXISTS {}").format(
-                        sql.Identifier(aname)
+                try:
+                    self.c.psql.execute(
+                        sql.SQL("DROP USER IF EXISTS {}").format(
+                            sql.Identifier(aname)
+                        )
                     )
-                )
+                except psycopg.errors.DependentObjectsStillExist:
+                    LOG.warning(
+                        "User %s can't be deleted now due to existing "
+                        "dependencies, will try later",
+                        aname,
+                    )
+                    continue
 
                 LOG.info("User %s dropped", aname)
 
@@ -229,7 +237,7 @@ WHERE d.datname not in """
         for a in actual_dbs:
             if a not in self.databases:
                 self.c.psql.execute(
-                    sql.SQL("DROP DATABASE IF EXISTS {}").format(
+                    sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(
                         sql.Identifier(a)
                     )
                 )

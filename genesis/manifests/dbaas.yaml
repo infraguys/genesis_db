@@ -1,33 +1,25 @@
-Name: dbaas
-Description: Genesis DBaaS element
-SchemaVersion: 1
-Version: 0.0.1
+name: "dbaas"
+uuid: "869a8c0e-b9c0-4515-8c69-3cdd2c3d95d0"
+description: "Genesis DBaaS element"
+schema_version: 1
+version: "0.0.1"
+api_version: "v1"
 
-Requirements: []
-
-Resources:
-
+resources:
   $core.compute.nodes:
     dbaas_cp:
+      uuid: "bcb1407f-269b-4e30-a104-c22e677483a2"
       name: dbaas_cp
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
       root_disk_size: 15
       cores: 1
       ram: 1024
       image: http://repository.genesis-core.tech:8081/genesis-db/latest/genesis-db.raw.gz
 
-  $core.dns.domains.$local_domain:uuid.records:
-    dbaas_record:
-      name: "dbaas-cp"
-      type: "A"
-      record:
-        name: "dbaas-cp"
-        address: "$core.compute.nodes.$dbaas_cp.default_network.ipv4"
+  # TODO: Add DNS record when the Import/Export feature is added
 
   $dbaas.types.postgres.versions:
-    pg16:
-      name: "pg16"
+    pg18:
+      uuid: "26786c09-d175-44e5-9013-ac14c88acd1c"
+      name: "pg18"
       image: http://repository.genesis-core.tech:8081/genesis-db/latest/genesis-db-pg.raw.gz
-
-Import:
-  Resources:
-    local_domain: local_domain

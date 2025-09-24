@@ -1,0 +1,48 @@
+name: build
+
+on:
+  push:
+
+env:
+  ARTIFACTS_PATH: artifacts
+  PROJECT_NAME: genesis_db
+  REPO_ENDPOINT_PUT: http://10.20.0.1:8082
+
+jobs:
+  Build:
+    runs-on: self-hosted
+    strategy:
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+      - name: Build Genesis DB
+        run: |
+          set -eux
+
+          mkdir -p ${ARTIFACTS_PATH}
+
+          # Install DevTools
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install genesis-devtools
+
+          VERSION="$(genesis get-version .)"
+
+          genesis build $(pwd)
+
+          # Upload the VM image
+          curl -X PUT --upload-file output/genesis-db.raw.gz \
+            $REPO_ENDPOINT_PUT/${PROJECT_NAME}/${VERSION}/genesis-db.raw.gz
+          curl -X PUT --upload-file output/genesis-db-pg.raw.gz \
+            $REPO_ENDPOINT_PUT/${PROJECT_NAME}/${VERSION}/genesis-db-pg.raw.gz
+
+          # Temporary upload step is done in the build script
+          echo "${VERSION}" > "${ARTIFACTS_PATH}/version.txt"
+
+      - name: Upload the build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_artifacts
+          path: artifacts/

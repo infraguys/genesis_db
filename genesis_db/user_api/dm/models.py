@@ -24,6 +24,7 @@ from restalchemy.dm import relationships
 from restalchemy.dm import types
 from restalchemy.dm import types_dynamic
 from restalchemy.storage.sql import orm
+from gcl_sdk.agents.universal.dm import models as ua_models
 
 from genesis_db.common import utils as u
 
@@ -53,6 +54,7 @@ class PGVersion(
     models.ModelWithNameDesc,
     models.ModelWithTimestamp,
     orm.SQLStorableMixin,
+    ua_models.TargetResourceMixin,
 ):
     __tablename__ = "postgres_versions"
 
@@ -111,6 +113,8 @@ class InstanceChildModel(
     models.ModelWithUUID,
     models.ModelWithNameDesc,
     models.ModelWithTimestamp,
+    models.ModelWithProject,
+    ua_models.TargetResourceMixin,
     orm.SQLStorableMixin,
 ):
     instance = relationships.relationship(

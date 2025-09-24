@@ -69,6 +69,7 @@ CREATE TABLE postgres_users (
     name VARCHAR(64) NOT NULL,
     status VARCHAR(64) NOT NULL DEFAULT 'NEW',
     description TEXT,
+    project_id UUID NOT NULL,
     password VARCHAR(256) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
@@ -82,6 +83,7 @@ CREATE TABLE postgres_databases (
     name VARCHAR(255) NOT NULL,
     status VARCHAR(64) NOT NULL DEFAULT 'NEW',
     description TEXT,
+    project_id UUID NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     instance UUID NOT NULL,
@@ -89,6 +91,14 @@ CREATE TABLE postgres_databases (
     FOREIGN KEY (instance) REFERENCES postgres_instances(uuid),
     FOREIGN KEY ("owner") REFERENCES postgres_users(uuid)
 );
+""",
+            """\
+CREATE INDEX IF NOT EXISTS postgres_users_project_id_idx
+                ON postgres_users (project_id);
+""",
+            """\
+CREATE INDEX IF NOT EXISTS postgres_databases_project_id_idx
+                ON postgres_databases (project_id);
 """,
         ]
 

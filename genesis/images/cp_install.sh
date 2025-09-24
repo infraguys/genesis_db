@@ -49,6 +49,7 @@ sudo -u postgres psql -c "CREATE DATABASE $GC_PG_DB OWNER $GC_PG_USER;"
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
 sudo cp "$GC_PATH/etc/genesis_db/genesis_db.conf" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/genesis_db/core_agent.conf" $GC_CFG_DIR/
 sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
 sudo cp "$GC_PATH/genesis/images/bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
 
@@ -80,16 +81,19 @@ sudo ln -sf "$VENV_PATH/bin/genesis-db-gservice" "/usr/bin/genesis-db-gservice"
 sudo ln -sf "$VENV_PATH/bin/genesis-db-user-api" "/usr/bin/genesis-db-user-api"
 sudo ln -sf "$VENV_PATH/bin/genesis-db-status-api" "/usr/bin/genesis-db-status-api"
 sudo ln -sf "$VENV_PATH/bin/genesis-db-orch-api" "/usr/bin/genesis-db-orch-api"
+sudo ln -sf "$VENV_PATH/bin/genesis-universal-agent-db-back" "/usr/bin/genesis-universal-agent-db-back"
 
 # Install Systemd service files
 sudo cp "$GC_PATH/etc/systemd/genesis-db-gservice.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-user-api.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-status-api.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-orch-api.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/genesis-db-core-agent.service" $SYSTEMD_SERVICE_DIR
 
 # Enable genesis db services
 sudo systemctl enable \
     genesis-db-gservice \
     genesis-db-user-api \
     genesis-db-status-api \
-    genesis-db-orch-api
+    genesis-db-orch-api \
+    genesis-db-core-agent

@@ -31,6 +31,8 @@ SYSTEMD_SERVICE_DIR=/etc/systemd/system/
 DEV_SDK_PATH="/opt/gcl_sdk"
 SDK_DEV_MODE=$([ -d "$DEV_SDK_PATH" ] && echo "true" || echo "false")
 
+PG_VERSION="18"
+
 # Install packages
 sudo apt update
 sudo apt dist-upgrade -y
@@ -75,10 +77,10 @@ sudo apt-get update
 sudo apt-get install postgresql-common -y
 sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
 sudo apt-get update
-sudo apt -y install postgresql
+sudo apt -y install "postgresql-${PG_VERSION}"
 sudo systemctl stop postgresql
 sudo systemctl disable postgresql
-sudo ln -s /usr/lib/postgresql/17/bin/* /usr/sbin/
+sudo ln -s /usr/lib/postgresql/$PG_VERSION/bin/* /usr/sbin/
 
 # Setup watchdog
 cat <<EOF | sudo tee /etc/udev/rules.d/99-watchdog.rules

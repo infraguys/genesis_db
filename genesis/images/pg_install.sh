@@ -37,7 +37,7 @@ PG_VERSION="18"
 sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
-    libev-dev yq
+    libev-dev yq watchdog
 
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
@@ -87,7 +87,7 @@ cat <<EOF | sudo tee /etc/udev/rules.d/99-watchdog.rules
 KERNEL=="watchdog", OWNER="postgres", GROUP="postgres"
 EOF
 sudo sh -c 'echo "softdog" >> /etc/modules-load.d/softdog.conf'
-sudo sed -i '/blacklist softdog/d' /lib/modprobe.d/* /etc/modprobe.d/*
+sudo sed -i 's/watchdog_module="none"/watchdog_module="softdog"/' /etc/default/watchdog
 
 # Prepare patroni
 sudo su postgres <<'EOF'

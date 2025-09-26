@@ -85,6 +85,7 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
             path="/var/lib/postgresql/patroni/patroni.yml",
             owner="postgres",
             group="postgres",
+            mode="0660",
             on_change=self.OnReloadFunc,
         )
 

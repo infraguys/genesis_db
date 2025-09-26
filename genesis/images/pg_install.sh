@@ -37,7 +37,7 @@ PG_VERSION="18"
 sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
-    libev-dev
+    libev-dev yq
 
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
@@ -99,13 +99,21 @@ source venv/bin/activate
 pip install psycopg[binary] patroni[raft]
 
 mkdir -p data
-chmod 700 data
+chmod 750 data
 mkdir -p raft
-chmod 700 raft
+chmod 770 raft
 EOF
 
 # Install Systemd service files
 sudo cp "$GC_PATH/etc/systemd/genesis-patroni.service" $SYSTEMD_SERVICE_DIR
+
+# Add some usability
+sudo ln -sf "/var/lib/postgresql/patroni/venv/bin/patronictl" "/usr/bin/patronictl"
+sudo ln -sf "/var/lib/postgresql/patroni/venv/bin/syncobj_admin" "/usr/bin/syncobj_admin"
+mkdir -p ~/.config/patroni
+ln -sf "/var/lib/postgresql/patroni/patroni.yml" ~/.config/patroni/patronictl.yaml
+sudo usermod -a -G postgres ubuntu
+ln -sf "/var/lib/postgresql/patroni" ~/patroni
 
 # Enable genesis db services
 sudo systemctl enable \

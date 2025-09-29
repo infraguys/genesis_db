@@ -43,6 +43,9 @@ class PGInstanceNode(
     name = properties.property(ra_types.String(min_length=1, max_length=64))
     databases = properties.property(ra_types.Dict())
     users = properties.property(ra_types.Dict())
+    nodes_number = properties.property(
+        ra_types.Integer(min_value=1, max_value=16)
+    )
     sync_replica_number = properties.property(
         ra_types.Integer(min_value=0, max_value=15)
     )
@@ -62,6 +65,7 @@ class PGInstanceNode(
                 "uuid",
                 "name",
                 "sync_replica_number",
+                "nodes_number",
                 "databases",
                 "users",
             )

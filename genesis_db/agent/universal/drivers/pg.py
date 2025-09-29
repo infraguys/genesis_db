@@ -19,6 +19,7 @@ from functools import lru_cache
 from functools import wraps
 import logging
 import requests
+from requests.auth import HTTPBasicAuth
 import time
 
 from restalchemy.dm import types as ra_types
@@ -30,6 +31,7 @@ from gcl_sdk.agents.universal import constants as c
 from gcl_sdk.infra import constants as pc
 import psycopg
 from psycopg import sql
+import yaml
 
 from restalchemy.common import singletons
 from restalchemy.dm import properties
@@ -53,11 +55,20 @@ def get_ttl_hash(seconds=600):
 
 class PatroniClient:
     def __init__(self):
+        self._load_config()
         self._endpoint = constants.PATRONI_API_ENDPOINT
         # We don't need retries/etc because it's local and patroni loves to
         #  return 5XX codes with valid responses
         #  https://patroni.readthedocs.io/en/latest/rest_api.html
         self._client = requests.Session()
+        creds = self._config["restapi"]["authentication"]
+        # TODO: check for config changes?
+        self._client.auth = HTTPBasicAuth(creds["username"], creds["password"])
+
+    def _load_config(self):
+        with open(constants.PATRONI_CONFIG_FILE, "r") as file:
+            config = yaml.safe_load(file)
+        self._config = config
 
     def get_full_state(self):
         return self._client.get(f"{self._endpoint}/").json()
@@ -66,6 +77,16 @@ class PatroniClient:
     def is_primary(self, ttl_hash=None):
         del ttl_hash
         return self._client.get(f"{self._endpoint}/primary").status_code == 200
+
+    def config_get(self):
+        response = self._client.get(f"{self._endpoint}/config")
+        response.raise_for_status()
+        return response.json()
+
+    def config_patch(self, config):
+        response = self._client.patch(f"{self._endpoint}/config", json=config)
+        response.raise_for_status()
+        return response.json()
 
 
 class ClientsSingleton(singletons.InheritSingleton):
@@ -112,6 +133,9 @@ class PGInstance(meta.MetaDataPlaneModel):
     )
     databases = properties.property(ra_types.Dict(), default={})
     users = properties.property(ra_types.Dict(), default={})
+    nodes_number = properties.property(
+        ra_types.Integer(min_value=1, max_value=16)
+    )
     sync_replica_number = properties.property(
         ra_types.Integer(min_value=0, max_value=15)
     )
@@ -120,7 +144,7 @@ class PGInstance(meta.MetaDataPlaneModel):
         default=pc.InstanceStatus.ACTIVE.value,
     )
 
-    _meta_fields = {"uuid", "name"}
+    _meta_fields = {"uuid", "name", "nodes_number"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -260,8 +284,23 @@ WHERE d.datname not in """
         for aname, aowner in actual_dbs.items():
             self.databases[aname] = {"owner": aowner}
 
+    def _reconcile_DCS(self):
+        sync_enabled = self.nodes_number > 1 and self.sync_replica_number
+        tconfig = {
+            "synchronous_mode": bool(sync_enabled),
+            "synchronous_mode_strict": bool(sync_enabled),
+            "synchronous_node_count": self.sync_replica_number,
+        }
+        LOG.info("DCS patch: %s", tconfig)
+        self.c.pclient.config_patch(tconfig)
+
+    def _fill_DCS(self):
+        config = self.c.pclient.config_get()
+        self.sync_replica_number = config["synchronous_node_count"]
+
     @on_primary_only
     def dump_to_dp(self) -> None:
+        self._reconcile_DCS()
         self._reconcile_target_users()
         self._reconcile_target_databases()
 
@@ -269,6 +308,7 @@ WHERE d.datname not in """
     def restore_from_dp(self) -> None:
         self._fill_actual_users()
         self._fill_actual_databases()
+        self._fill_DCS()
 
     @on_primary_only
     def delete_from_dp(self) -> None:

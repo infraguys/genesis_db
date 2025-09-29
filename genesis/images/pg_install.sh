@@ -96,7 +96,7 @@ mkdir -p patroni
 cd patroni
 python3 -m venv venv
 source venv/bin/activate
-pip install psycopg[binary] patroni[raft]
+pip install "psycopg[binary]" "patroni[raft]>=4.1.0"
 
 mkdir -p data
 chmod 750 data
@@ -110,10 +110,13 @@ sudo cp "$GC_PATH/etc/systemd/genesis-patroni.service" $SYSTEMD_SERVICE_DIR
 # Add some usability
 sudo ln -sf "/var/lib/postgresql/patroni/venv/bin/patronictl" "/usr/bin/patronictl"
 sudo ln -sf "/var/lib/postgresql/patroni/venv/bin/syncobj_admin" "/usr/bin/syncobj_admin"
+sudo usermod -a -G postgres ubuntu
+# TODO remove wrapper when this script will be executed with ubuntu user
+sudo su ubuntu <<'EOF'
 mkdir -p ~/.config/patroni
 ln -sf "/var/lib/postgresql/patroni/patroni.yml" ~/.config/patroni/patronictl.yaml
-sudo usermod -a -G postgres ubuntu
 ln -sf "/var/lib/postgresql/patroni" ~/patroni
+EOF
 
 # Enable genesis db services
 sudo systemctl enable \

@@ -88,6 +88,7 @@ postgresql:
       password: rewind_password
   parameters:
     unix_socket_directories: '/var/run/postgresql,/tmp'
+    io_method: 'io_uring'
   pg_hba:
   - host replication dbaas_replicator 0.0.0.0/0 scram-sha-256
   - host all all 0.0.0.0/0 scram-sha-256

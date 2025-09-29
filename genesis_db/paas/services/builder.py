@@ -107,6 +107,7 @@ class PGInstanceBuilder(PaaSBuilder):
                 uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
                 name=instance.name,
                 instance=instance,
+                nodes_number=instance.nodes_number,
                 sync_replica_number=instance.sync_replica_number,
                 users=users,
                 databases=databases,
@@ -137,6 +138,7 @@ class PGInstanceBuilder(PaaSBuilder):
             for k, v in dict(
                 name=instance.name,
                 instance=instance,
+                nodes_number=instance.nodes_number,
                 sync_replica_number=instance.sync_replica_number,
                 users=users,
                 databases=databases,

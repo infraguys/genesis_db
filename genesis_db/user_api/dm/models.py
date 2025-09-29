@@ -84,9 +84,8 @@ class PGInstance(
     nodes_number = properties.property(
         types.Integer(min_value=1, max_value=16)
     )
-    # TODO: support it's change on dataplane
     sync_replica_number = properties.property(
-        types.Integer(min_value=0, max_value=15), default=1, read_only=True
+        types.Integer(min_value=0, max_value=15), default=1
     )
     # TODO: support version update
     version = relationships.relationship(

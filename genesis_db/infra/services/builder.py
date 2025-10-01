@@ -17,6 +17,7 @@
 import logging
 import uuid as sys_uuid
 import typing as tp
+import uuid
 
 from gcl_sdk.infra.services import builder
 from gcl_sdk.infra import constants as sdk_c
@@ -34,9 +35,9 @@ PATRONI_RAFT_PORT = 5010
 
 
 PATRONI_CONF_TEMPLATE = """\
-scope: {cluster_name}
+scope: "{cluster_name}"
 namespace: /db/
-name: {node_name}
+name: "{node_name}"
 
 restapi:
   listen: "0.0.0.0:8008"
@@ -145,43 +146,52 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             instance: The instance to actualize.
             infra: The infrastructure objects.
         """
-        nodes = {}
-        # configs = []
+        nodeset = None
+        configs = []
 
         for target, actual in infra.infra_objects:
-            # TODO: rework when nodeset is implemented
             if target.get_resource_kind() == NODE_SET_KIND:
-                continue
-            if actual.get_resource_kind() == NODE_KIND:
-                nodes[actual.uuid] = actual
-            # elif actual.get_resource_kind() == CONFIG_KIND:
-            #     configs.append(actual)
+                nodeset = actual
+            elif actual.get_resource_kind() == CONFIG_KIND:
+                configs.append(actual)
+
+        if nodeset.status != sdk_c.NodeStatus.ACTIVE.value:
+            return infra.targets()
 
         new_objects = []
 
-        # TODO: support cluster shrink? We should support it in dataplane too
-        for i in range(instance.nodes_number):
-            nuuid = sys_uuid.uuid5(instance.uuid, f"node-{i}")
-            if nuuid in nodes:
-                continue
-            node, config = instance._create_node_config(i, self._project_id)
-            new_objects.append(node)
-            new_objects.append(config)
-
         node_raft_members = [
-            f"{node.default_network.get("ipv4", "")}:{PATRONI_RAFT_PORT}"
-            for node in nodes.values()
+            f"{node['ipv4']}:{PATRONI_RAFT_PORT}"
+            for node in nodeset.nodes.values()
         ]
+        # In case of shrink we still has all nodes but only lower nodes_number
+        if (diff_num := len(node_raft_members) - instance.nodes_number) > 0:
+            node_raft_members = node_raft_members[:-diff_num]
+
         sync_mode = "true" if instance.sync_replica_number else "false"
+
+        for node_uuid, node in nodeset.nodes.items():
+            content = PATRONI_CONF_TEMPLATE.format(
+                cluster_name=instance.name,
+                node_name=node_uuid,
+                node_ip=node["ipv4"],
+                raft_partner_addrs=node_raft_members,
+                sync_mode=sync_mode,
+                sync_replica_number=instance.sync_replica_number,
+                on_change=instance.OnReloadFunc,
+            )
+            config = instance._create_config(
+                uuid.UUID(node_uuid), self._project_id, content
+            )
+            new_objects.append(config)
 
         # Update config content
         for target, _ in infra.infra_objects:
             if target.get_resource_kind() == CONFIG_KIND:
-                node = nodes[target.target.node]
                 content = PATRONI_CONF_TEMPLATE.format(
                     cluster_name=instance.name,
-                    node_name=node.name,
-                    node_ip=node.default_network.get("ipv4", ""),
+                    node_name=target.target.node,
+                    node_ip=nodeset.nodes[str(target.target.node)]["ipv4"],
                     raft_partner_addrs=node_raft_members,
                     sync_mode=sync_mode,
                     sync_replica_number=instance.sync_replica_number,
@@ -189,13 +199,21 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                 )
                 if target.body.content != content:
                     target.body.content = content
-            elif target.get_resource_kind() == NODE_KIND:
+            elif target.get_resource_kind() == NODE_SET_KIND:
                 target.cores = instance.cpu
                 target.ram = instance.ram
                 target.image = instance.version.image
+                target.replicas = instance.nodes_number
                 # This action wipe out the disk.
                 # Rethink this part when we have persistent volumes.
                 # target.root_disk_size = instance.disk_size
+
+        instance.ipsv4 = [node["ipv4"] for node in nodeset.nodes.values()]
+
+        try:
+            instance.status = sdk_c.InstanceStatus(nodeset.status).value
+        except ValueError:
+            instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
 
         # Return the target resources
         if new_objects:

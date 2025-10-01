@@ -76,6 +76,10 @@ class PGInstance(
         types.Enum([status.value for status in PGStatus]),
         default=PGStatus.NEW.value,
     )
+    ipsv4 = properties.property(
+        types.TypedList(types.String(max_length=15)),
+        default=lambda: [],
+    )
     cpu = properties.property(types.Integer(min_value=1, max_value=128))
     ram = properties.property(types.Integer(min_value=512, max_value=1024**3))
     disk_size = properties.property(

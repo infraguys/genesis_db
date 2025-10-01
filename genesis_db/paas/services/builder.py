@@ -17,12 +17,12 @@
 import logging
 import uuid as sys_uuid
 import typing as tp
+import uuid
 
 from gcl_sdk.paas.services import builder
 from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
-from gcl_sdk.agents.universal import utils
 
 from genesis_db.paas.dm import models
 
@@ -52,11 +52,10 @@ class PaaSBuilder(builder.PaaSBuilder):
         objects that should be scheduled on this agent.
         """
 
-        nodes = instance.get_infra()
         scheduled = {}
-        for node, node_entity in zip(nodes, paas_objects):
-            agent_uuid = self.agent_uuid_by_node(node.uuid)
-            scheduled[agent_uuid] = [node_entity]
+        for entity in paas_objects:
+            # We hardcode entity's uuid the same as agents's uuid
+            scheduled[entity.uuid] = [entity]
         return scheduled
 
 
@@ -91,27 +90,8 @@ class PGInstanceBuilder(PaaSBuilder):
         for the instance.
         """
 
-        # Get the infrastructure for the current PG instance
-        nodes = instance.get_infra()
-
-        users = self._get_users(instance)
-
-        databases = self._get_databases(instance)
-
-        instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
-
-        # Create the same derivatives database objects as nodes in the node set
-        return tuple(
-            models.PGInstanceNode(
-                uuid=sys_uuid.uuid5(instance.uuid, str(node.uuid)),
-                name=instance.name,
-                instance=instance,
-                nodes_number=instance.nodes_number,
-                sync_replica_number=instance.sync_replica_number,
-                users=users,
-                databases=databases,
-            )
-            for node in nodes
+        return self.actualize_paas_objects(
+            instance, builder.PaaSCollection(paas_objects=tuple())
         )
 
     def actualize_paas_objects(
@@ -126,6 +106,9 @@ class PGInstanceBuilder(PaaSBuilder):
         users = self._get_users(instance)
 
         databases = self._get_databases(instance)
+
+        nodeset = instance.get_actual_nodeset()
+        nodes_by_idx = list(nodeset.nodes.keys())
 
         # Support only PGInstanceNode
         for res in paas_collection.targets():
@@ -145,15 +128,28 @@ class PGInstanceBuilder(PaaSBuilder):
                 setattr(res, k, v)
             actual_resources.append(res)
 
-        if all(
-            actual_res  # may not exist yet
-            and actual_res.status == sdk_c.InstanceStatus.ACTIVE.value
-            and len(actual_res.users) == len(users)
-            and len(actual_res.databases) == len(databases)
-            for actual_res in paas_collection.actuals()
-        ):
-            instance.status = sdk_c.InstanceStatus.ACTIVE.value
-        else:
-            instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
+        diff_num = instance.nodes_number - len(actual_resources)
+
+        # Shrink - just remove N nodes from the end
+        if diff_num < 0:
+            for _ in range(-diff_num):
+                del actual_resources[-1]
+        # Add new nodes
+        elif diff_num > 0:
+            start_num = len(actual_resources)
+            for i in range(start_num + 1, start_num + diff_num + 1):
+                actual_resources.append(
+                    models.PGInstanceNode(
+                        uuid=PaaSBuilder.agent_uuid_by_node(
+                            uuid.UUID(nodes_by_idx[i - 1])
+                        ),
+                        name=instance.name,
+                        instance=instance,
+                        nodes_number=instance.nodes_number,
+                        sync_replica_number=instance.sync_replica_number,
+                        users=users,
+                        databases=databases,
+                    )
+                )
 
         return actual_resources

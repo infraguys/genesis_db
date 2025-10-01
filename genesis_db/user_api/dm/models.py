@@ -27,6 +27,7 @@ from restalchemy.storage.sql import orm
 from gcl_sdk.agents.universal.dm import models as ua_models
 
 from genesis_db.common import utils as u
+from genesis_db.common.pg_auth import passwd
 
 
 class PGStatus(str, enum.Enum):
@@ -149,6 +150,20 @@ class PGUser(InstanceChildModel):
         default=PGStatus.ACTIVE.value,
     )
     password = properties.property(types.String(min_length=8, max_length=99))
+    password_hash = properties.property(
+        types.String(min_length=1, max_length=512)
+    )
+
+    def _update_pw_hash(self):
+        self.password_hash = passwd.scram_sha_256(self.password)
+
+    def insert(self, session=None):
+        self._update_pw_hash()
+        super().insert(session=session)
+
+    def update(self, session=None, force=False):
+        self._update_pw_hash()
+        super().update(session=session, force=force)
 
 
 class PGDatabase(InstanceChildModel):

@@ -71,6 +71,7 @@ CREATE TABLE postgres_users (
     description TEXT,
     project_id UUID NOT NULL,
     password VARCHAR(256) NOT NULL,
+    password_hash VARCHAR(512) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     instance UUID NOT NULL,

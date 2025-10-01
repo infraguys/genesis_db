@@ -103,4 +103,10 @@ class PGUserController(
         model_class=models.PGUser,
         convert_underscore=False,
         process_filters=True,
+        fields_permissions=field_p.FieldsPermissions(
+            default=field_p.Permissions.RW,
+            fields={
+                "password_hash": {constants.ALL: field_p.Permissions.HIDDEN},
+            },
+        ),
     )

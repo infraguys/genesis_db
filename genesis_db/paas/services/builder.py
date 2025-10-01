@@ -24,7 +24,6 @@ from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
 from gcl_sdk.agents.universal import utils
 
-from genesis_db.common.pg_auth import passwd
 from genesis_db.paas.dm import models
 
 LOG = logging.getLogger(__name__)
@@ -73,7 +72,7 @@ class PGInstanceBuilder(PaaSBuilder):
         return {
             u.name: {
                 # Don't give actual password to dataplane, just hash it
-                "pw_hash": passwd.scram_sha_256(u.password),
+                "pw_hash": u.password_hash,
             }
             for u in instance.get_users()
         }

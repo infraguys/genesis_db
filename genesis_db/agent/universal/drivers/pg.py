@@ -21,6 +21,7 @@ import logging
 import requests
 from requests.auth import HTTPBasicAuth
 import time
+import typing as tp
 
 from restalchemy.dm import types as ra_types
 from restalchemy.dm import properties

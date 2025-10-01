@@ -56,6 +56,7 @@ CREATE TABLE postgres_instances (
     nodes_number INT NOT NULL CHECK (nodes_number BETWEEN 1 AND 16),
     sync_replica_number INT NOT NULL CHECK (sync_replica_number BETWEEN 0 AND 15),
     version UUID NOT NULL,
+    "ipsv4" varchar(15) ARRAY,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     FOREIGN KEY (version) REFERENCES postgres_versions(uuid)

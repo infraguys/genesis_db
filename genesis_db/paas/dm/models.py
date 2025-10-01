@@ -17,6 +17,7 @@
 import typing as tp
 import logging
 
+from restalchemy.dm import filters as ra_filters
 from restalchemy.dm import types as ra_types
 from restalchemy.dm import models as ra_models
 from restalchemy.dm import properties
@@ -100,14 +101,11 @@ class PGInstance(
             )
         )
 
-    def get_infra(self) -> tp.Collection[sdk_models.NodeSet | sdk_models.Node]:
-        # TODO(akremenetsky): Temporarily solution since we don't have sets
-        # support yet
-
-        # node_set = sdk_models.NodeSet.get_one_from_resource_storage(self.uuid)
-
-        # Need to filter nodes by node_set.uuid
-        nodes = sdk_models.Node.get_all_from_resource_storage()
-
-        # return [node_set] + list(nodes)
-        return list(nodes)
+    def get_actual_nodeset(self):
+        res = ua_models.Resource.objects.get_one(
+            filters={
+                "uuid": ra_filters.EQ(self.uuid),
+                "kind": ra_filters.EQ("node_set"),
+            }
+        )
+        return self.__master_model__.from_ua_resource(res)

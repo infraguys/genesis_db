@@ -60,27 +60,17 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
         command="systemctl reload genesis-patroni"
     )
 
-    def _create_node_config(self, number, project_id):
-        node = sdk_models.Node(
-            uuid=sys_uuid.uuid5(self.uuid, f"node-{number}"),
-            name=f"{self.name}-node-{number}",
-            cores=self.cpu,
-            ram=self.ram,
-            root_disk_size=self.disk_size,
-            image=self.version.image,
-            project_id=project_id,
-            status=sdk_c.NodeStatus.NEW.value,
-        )
+    def _create_config(self, node_uuid, project_id, content=""):
         config = sdk_models.Config(
-            uuid=sys_uuid.uuid5(self.uuid, f"config-{number}"),
-            name=f"{self.name}-config-{number}",
+            uuid=sys_uuid.uuid5(self.uuid, f"config-{node_uuid}"),
+            name=str(node_uuid),
             project_id=project_id,
             status=sdk_c.InstanceStatus.NEW.value,
             target=sdk_models.NodeTarget(
-                node=node.uuid,
+                node=node_uuid,
             ),
             body=sdk_models.TextBodyConfig(
-                content="",
+                content=content,
             ),
             path="/var/lib/postgresql/patroni/patroni.yml",
             owner="postgres",
@@ -89,7 +79,7 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
             on_change=self.OnReloadFunc,
         )
 
-        return node, config
+        return config
 
     def get_infra(
         self,
@@ -98,28 +88,17 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
         """Return the infrastructure objects."""
         infra_objects = []
 
-        # node_set = sdk_models.NodeSet(
-        #     uuid=self.uuid,
-        #     name=self.name,
-        #     cores=self.cpu,
-        #     ram=self.ram,
-        #     root_disk_size=self.disk_size,
-        #     image=self.version.image,
-        #     replicas=self.nodes_number,
-        #     project_id=project_id,
-        #     status=sdk_c.NodeStatus.NEW.value,
-        # )
-        # infra_objects.append(node_set)
-
-        # TODO: Remove nodes
-        # NOTE(akremenetsky): Sets aren't supported yet so create
-        # nodes directly. This part will be removed when sets are
-        # supported.
-        for i in range(self.nodes_number):
-            node, config = self._create_node_config(i, project_id)
-            infra_objects.append(node)
-            infra_objects.append(config)
-
-        # node_set.nodes = [node.uuid for node in infra_objects[1:]]
+        node_set = sdk_models.NodeSet(
+            uuid=self.uuid,
+            name=f"dbaas-{self.name}",
+            cores=self.cpu,
+            ram=self.ram,
+            root_disk_size=self.disk_size,
+            image=self.version.image,
+            replicas=self.nodes_number,
+            project_id=project_id,
+            status=sdk_c.NodeStatus.NEW.value,
+        )
+        infra_objects.append(node_set)
 
         return infra_objects

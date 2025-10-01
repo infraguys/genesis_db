@@ -46,19 +46,19 @@ class GeneralService(basic.BasicService):
 
         # Infra scheduler
         infra_scheduler = scheduler_service.UniversalAgentSchedulerService(
-            capabilities=["node", "config"]
+            capabilities=["node_set", "config"]
         )
 
         # Infra agent
         orch_client = orch_db.DatabaseOrchClient()
         agent_uuid = ua_utils.system_uuid()
 
-        core_driver = core_drivers.CoreCapabilityDriver(
+        core_driver = core_drivers.RestCoreCapabilityDriver(
             username="admin",
             password="admin",
             user_api_base_url="http://10.20.0.2:11010",
             project_id=sys_uuid.UUID("11111112-f41d-40ff-b530-e8f4e70b53ca"),
-            node="/v1/nodes/",
+            node_set="/v1/sets/",
             config="/v1/config/configs/",
         )
 

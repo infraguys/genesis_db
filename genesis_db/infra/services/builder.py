@@ -170,6 +170,7 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
 
         sync_mode = "true" if instance.sync_replica_number else "false"
 
+        # Just recreate configs, it'll be updated in DB if already exist
         for node_uuid, node in nodeset.nodes.items():
             content = PATRONI_CONF_TEMPLATE.format(
                 cluster_name=instance.name,
@@ -185,20 +186,12 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             )
             new_objects.append(config)
 
-        # Update config content
+        tgt_nodeset = None
+
         for target, _ in infra.infra_objects:
             if target.get_resource_kind() == CONFIG_KIND:
-                content = PATRONI_CONF_TEMPLATE.format(
-                    cluster_name=instance.name,
-                    node_name=target.target.node,
-                    node_ip=nodeset.nodes[str(target.target.node)]["ipv4"],
-                    raft_partner_addrs=node_raft_members,
-                    sync_mode=sync_mode,
-                    sync_replica_number=instance.sync_replica_number,
-                    on_change=instance.OnReloadFunc,
-                )
-                if target.body.content != content:
-                    target.body.content = content
+                # We already regenerated them earlier
+                continue
             elif target.get_resource_kind() == NODE_SET_KIND:
                 target.cores = instance.cpu
                 target.ram = instance.ram
@@ -207,6 +200,12 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                 # This action wipe out the disk.
                 # Rethink this part when we have persistent volumes.
                 # target.root_disk_size = instance.disk_size
+                tgt_nodeset = target
+            else:
+                LOG.exception(
+                    "%s kind is not supported here, ignoring...",
+                    target.get_resource_kind(),
+                )
 
         instance.ipsv4 = [node["ipv4"] for node in nodeset.nodes.values()]
 
@@ -215,7 +214,4 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
         except ValueError:
             instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
 
-        # Return the target resources
-        if new_objects:
-            return (*infra.targets(), *new_objects)
-        return infra.targets()
+        return (tgt_nodeset, *new_objects)

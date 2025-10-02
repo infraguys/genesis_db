@@ -110,46 +110,20 @@ class PGInstanceBuilder(PaaSBuilder):
         nodeset = instance.get_actual_nodeset()
         nodes_by_idx = list(nodeset.nodes.keys())
 
-        # Support only PGInstanceNode
-        for res in paas_collection.targets():
-            if not isinstance(res, models.PGInstanceNode):
-                LOG.warning(
-                    "PGInstanceBuilder doesn't support %s model type",
-                    res.__class__.__name__,
+        # Just recreate entities, it'll be updated in DB if already exist
+        for i in range(instance.nodes_number):
+            actual_resources.append(
+                models.PGInstanceNode(
+                    uuid=PaaSBuilder.agent_uuid_by_node(
+                        uuid.UUID(nodes_by_idx[i])
+                    ),
+                    name=instance.name,
+                    instance=instance,
+                    nodes_number=instance.nodes_number,
+                    sync_replica_number=instance.sync_replica_number,
+                    users=users,
+                    databases=databases,
                 )
-            for k, v in dict(
-                name=instance.name,
-                instance=instance,
-                nodes_number=instance.nodes_number,
-                sync_replica_number=instance.sync_replica_number,
-                users=users,
-                databases=databases,
-            ).items():
-                setattr(res, k, v)
-            actual_resources.append(res)
-
-        diff_num = instance.nodes_number - len(actual_resources)
-
-        # Shrink - just remove N nodes from the end
-        if diff_num < 0:
-            for _ in range(-diff_num):
-                del actual_resources[-1]
-        # Add new nodes
-        elif diff_num > 0:
-            start_num = len(actual_resources)
-            for i in range(start_num + 1, start_num + diff_num + 1):
-                actual_resources.append(
-                    models.PGInstanceNode(
-                        uuid=PaaSBuilder.agent_uuid_by_node(
-                            uuid.UUID(nodes_by_idx[i - 1])
-                        ),
-                        name=instance.name,
-                        instance=instance,
-                        nodes_number=instance.nodes_number,
-                        sync_replica_number=instance.sync_replica_number,
-                        users=users,
-                        databases=databases,
-                    )
-                )
+            )
 
         return actual_resources

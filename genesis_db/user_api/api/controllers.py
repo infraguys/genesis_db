@@ -32,7 +32,7 @@ class ApiEndpointController(ra_controllers.RoutesListController):
 
 class TypeController(ra_controllers.Controller):
 
-    def filter(self, filters):
+    def filter(self, filters, order_by):
         return ["postgres"]
 
 
@@ -57,7 +57,7 @@ class PGVersionController(
 
 
 class PGInstanceController(
-    iam_controllers.PolicyBasedControllerMixin,
+    iam_controllers.PolicyBasedController,
     ra_controllers.BaseResourceControllerPaginated,
 ):
     __policy_service_name__ = "genesis_db"

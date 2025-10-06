@@ -34,7 +34,7 @@ cli_opts = [
     ),
     cfg.StrOpt(
         "endpoint",
-        default="http://localhost:11010/v1/",
+        default="http://core.local.genesis-core.tech:11010/v1/",
         help="Endpoint to IAM",
     ),
 ]

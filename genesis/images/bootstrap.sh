@@ -19,3 +19,5 @@
 set -eu
 set -x
 set -o pipefail
+
+genesis-db-bootstrap

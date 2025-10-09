@@ -53,3 +53,17 @@ build:
         # Override image build parameters, for instance disk size
         override:
           disk_size: "6G"
+          use_backing_file: true
+        envs:
+          - LAB_MODE
+      - name: lab-genesis-db-pg
+        format: gz
+        profile: genesis_base
+        script: images/pg_install.sh
+
+        # Override image build parameters, for instance disk size
+        override:
+          disk_size: "6G"
+          use_backing_file: true
+        envs:
+          - LAB_MODE=true

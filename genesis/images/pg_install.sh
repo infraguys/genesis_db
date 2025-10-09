@@ -121,3 +121,27 @@ EOF
 # Enable genesis db services
 sudo systemctl enable \
     genesis-patroni
+
+# Lab mode
+LAB_MODE=${LAB_MODE-}
+if [ -n "$LAB_MODE" ]; then
+    # set password for main user
+    echo "ubuntu:ubuntu" | sudo chpasswd
+    sudo rm /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+    sudo yq -yi '.system_info.default_user.lock_passwd |= false' /etc/cloud/cloud.cfg
+
+    # copy lab materials into home dir
+    rsync -a "$GC_PATH/lab/" /home/ubuntu/
+
+    # NOTE: don't use genesis build -i, it'll override these keys!
+    # Add speakers' keys
+    sudo -u ubuntu touch /home/ubuntu/.ssh/authorized_keys
+    for user in gmelikov akremenetsky phantomii; do
+        curl -fsSL "https://github.com/${user}.keys" | sudo -u ubuntu tee -a /home/ubuntu/.ssh/authorized_keys >/dev/null
+    done
+
+    # set ssh key for ease of use
+    sudo -u ubuntu ssh-keygen -q -f "/home/ubuntu/.ssh/lab" -N "" -C "lab"
+    cat /home/ubuntu/.ssh/lab.pub >> /home/ubuntu/.ssh/authorized_keys
+
+fi

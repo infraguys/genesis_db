@@ -144,4 +144,25 @@ if [ -n "$LAB_MODE" ]; then
     sudo -u ubuntu ssh-keygen -q -f "/home/ubuntu/.ssh/lab" -N "" -C "lab"
     cat /home/ubuntu/.ssh/lab.pub >> /home/ubuntu/.ssh/authorized_keys
 
+    sudo rm /etc/update-motd.d/91-* /etc/update-motd.d/92* /etc/update-motd.d/90* /etc/update-motd.d/00* /etc/update-motd.d/10*
+
+    cat <<EOT | sudo tee /etc/motd
+▄▖        ▘    ▄▖
+▌ █▌▛▌█▌▛▘▌▛▘  ▌ ▛▌▛▘█▌
+▙▌▙▖▌▌▙▖▄▌▌▄▌  ▙▖▙▌▌ ▙▖
+
+
+Welcome to Genesis DBaaS virtual machine!
+
+If you see this - you'll be treated as the expert, so:
+"With great power comes great responsibility".
+
+All materials can be found here:
+https://github.com/infraguys/genesis_db
+
+Support chat:
+https://t.me/infraguys_support
+
+EOT
+
 fi

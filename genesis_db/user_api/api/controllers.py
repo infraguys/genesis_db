@@ -71,6 +71,7 @@ class PGInstanceController(
             default=field_p.Permissions.RW,
             fields={
                 "status": {constants.ALL: field_p.Permissions.RO},
+                "ipsv4": {constants.ALL: field_p.Permissions.RO},
             },
         ),
     )

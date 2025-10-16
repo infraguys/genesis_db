@@ -155,6 +155,9 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             elif actual.get_resource_kind() == CONFIG_KIND:
                 configs.append(actual)
 
+        if nodeset.nodes:
+            instance.ipsv4 = [node["ipv4"] for node in nodeset.nodes.values()]
+
         if nodeset.status != sdk_c.NodeStatus.ACTIVE.value:
             return infra.targets()
 
@@ -206,8 +209,6 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
                     "%s kind is not supported here, ignoring...",
                     target.get_resource_kind(),
                 )
-
-        instance.ipsv4 = [node["ipv4"] for node in nodeset.nodes.values()]
 
         try:
             instance.status = sdk_c.InstanceStatus(nodeset.status).value

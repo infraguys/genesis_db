@@ -16,6 +16,7 @@
 
 # project
 GLOBAL_SERVICE_NAME = "genesis_db"
+WORK_DIR = "/var/lib/genesis/genesis_db"
 
 PATRONI_DIR = "/var/lib/postgresql/patroni"
 PATRONI_CONFIG_FILE = f"{PATRONI_DIR}/patroni.yml"

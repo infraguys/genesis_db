@@ -83,7 +83,7 @@ class PGInstance(
     cpu = properties.property(types.Integer(min_value=1, max_value=128))
     ram = properties.property(types.Integer(min_value=512, max_value=1024**3))
     disk_size = properties.property(
-        types.Integer(min_value=1, max_value=1024**3)
+        types.Integer(min_value=8, max_value=1024**3)
     )
     # TODO: restrict shrink/support shrink
     nodes_number = properties.property(

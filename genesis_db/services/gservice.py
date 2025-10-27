@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
 import logging
 import uuid as sys_uuid
 
@@ -29,6 +30,7 @@ from gcl_sdk.agents.universal.services import agent as agent_service
 from gcl_sdk.agents.universal.services import scheduler as scheduler_service
 from gcl_sdk.agents.universal import utils as ua_utils
 from gcl_sdk.agents.universal.drivers import core as core_drivers
+from genesis_db.common import constants as cc
 
 LOG = logging.getLogger(__name__)
 
@@ -74,6 +76,7 @@ class GeneralService(basic.BasicService):
             caps_drivers=caps_drivers,
             facts_drivers=facts_drivers,
             iter_min_period=iter_min_period,
+            payload_path=os.path.join(cc.WORK_DIR, "infra_agent_payload.json"),
         )
 
         # Services

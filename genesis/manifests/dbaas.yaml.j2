@@ -1,0 +1,48 @@
+name: "dbaas"
+uuid: "869a8c0e-b9c0-4515-8c69-3cdd2c3d95d0"
+description: "Genesis DBaaS element"
+schema_version: 1
+version: "{{ version }}"
+api_version: "v1"
+
+requirements:
+  core:
+    from_version: "0.0.0"
+
+resources:
+  $core.compute.nodes:
+    dbaas_cp:
+      uuid: "bcb1407f-269b-4e30-a104-c22e677483a2"
+      name: dbaas_cp
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      root_disk_size: 15
+      cores: 1
+      ram: 1024
+      image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db.raw.gz
+
+  $dbaas.types.postgres.versions:
+    pg18:
+      uuid: "26786c09-d175-44e5-9013-ac14c88acd1c"
+      name: "pg18"
+      image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db-pg.raw.gz
+
+  $dbaas.imports.$core_local_domain.records:
+    dbaas_cp:
+      uuid: "1eb53a9a-1632-405e-a4d0-f497fd1f00dd"
+      domain: "$dbaas.imports.$core_local_domain:uuid"
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      type: "A"
+      record:
+        kind: "A"
+        name: "dbaas-cp"
+        address: "$core.compute.nodes.$dbaas_cp:default_network:ipv4"
+
+imports:
+  core_local_domain:
+    element: "$core"
+    kind: "resource"
+    link: "$core.dns.domains.$local_domain"
+
+exports:
+  pg18:
+    link: "$dbaas.types.postgres.versions.$pg18"

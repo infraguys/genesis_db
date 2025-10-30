@@ -56,7 +56,7 @@ build:
           use_backing_file: true
         envs:
           - LAB_MODE
-      - name: lab-genesis-db-pg
+      - name: genesis-db-pg-lab
         format: gz
         profile: genesis_base
         script: images/pg_install.sh

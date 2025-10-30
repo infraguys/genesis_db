@@ -146,6 +146,14 @@ if [ -n "$LAB_MODE" ]; then
 
     sudo rm /etc/update-motd.d/91-* /etc/update-motd.d/92* /etc/update-motd.d/90* /etc/update-motd.d/00* /etc/update-motd.d/10*
 
+    # Some beauty
+    cat <<EOT | sudo tee -a /home/ubuntu/.bashrc
+
+# Show ip in PS1
+IP=\$(hostname -I | awk '{print \$1}')
+PS1="\u@\$IP:\w\$ "
+EOT
+
     cat <<EOT | sudo tee /etc/motd
 ▄▖        ▘    ▄▖
 ▌ █▌▛▌█▌▛▘▌▛▘  ▌ ▛▌▛▘█▌

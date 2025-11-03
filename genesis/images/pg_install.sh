@@ -146,12 +146,19 @@ if [ -n "$LAB_MODE" ]; then
 
     sudo rm /etc/update-motd.d/91-* /etc/update-motd.d/92* /etc/update-motd.d/90* /etc/update-motd.d/00* /etc/update-motd.d/10*
 
+    echo "@reboot root sleep 30 && hostname \$(hostname -I | awk '{print \$1}')" | sudo tee /etc/cron.d/lab_startup > /dev/null
+
     # Some beauty
     cat <<EOT | sudo tee -a /home/ubuntu/.bashrc
 
 # Show ip in PS1
+bold=\$(tput bold)
+red=\$(tput setaf 1)
+green=\$(tput setaf 2)
+blue=\$(tput setaf 4)
+reset=\$(tput sgr0)
 IP=\$(hostname -I | awk '{print \$1}')
-PS1="\u@\$IP:\w\$ "
+PS1="\[\$red\]\$IP\[\$reset\]:\w\$ "
 EOT
 
     cat <<EOT | sudo tee /etc/motd

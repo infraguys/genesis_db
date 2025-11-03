@@ -58,9 +58,30 @@ bootstrap:
     retry_timeout: 10
     maximum_lag_on_failover: 1048576
     postgresql:
-      use_pg_rewind: false
+      use_pg_rewind: true
       use_slots: true
       parameters:
+        archive_mode: "on"
+        archive_timeout: 1800s
+        wal_log_hints: 'on'
+        wal_compression: 'lz4'
+        max_connections: 500
+        tcp_keepalives_idle: 900
+        tcp_keepalives_interval: 100
+        # More aggressive vacuum
+        autovacuum_max_workers: 5
+        autovacuum_vacuum_scale_factor: 0.05
+        autovacuum_analyze_scale_factor: 0.02
+        # Log user actions, may be too verbose
+        log_line_prefix: '%t [%p]: [%l-1] %c %x %d %u %a %h '
+        log_lock_waits: 'on'
+        log_min_duration_statement: 500
+        log_autovacuum_min_duration: 0
+        log_connections: 'on'
+        log_disconnections: 'on'
+        log_statement: 'ddl'
+        log_temp_files: 0
+        track_functions: all
     synchronous_mode: {sync_mode}
     synchronous_mode_strict: {sync_mode}
     synchronous_node_count: {sync_replica_number}

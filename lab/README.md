@@ -20,6 +20,9 @@ patronictl:
   topology          Prints ASCII topology for given cluster
 ```
 
+## Presentation
+You can find whole presentation [here (RU)](https://bit.ly/hl_dbaas).
+
 ## **Hands-On Case Studies**
 
 This is a list of practical cases to understand the operation and failure scenarios of a 3-node Patroni-managed PostgreSQL cluster.

@@ -100,6 +100,15 @@ class PGInstance(
             session=session, filters={"instance": dm_filters.EQ(self)}
         )
 
+    def _validate_update(self, session=None):
+        disk_size = self.properties["disk_size"]
+        if disk_size.is_dirty() and disk_size.old_value > self.disk_size:
+            raise NotImplementedError("disk_size shrink is not supported yet")
+
+    def update(self, session=None, force=False):
+        self._validate_update(session=session)
+        super().update(session=session, force=force)
+
     def delete(self, session=None, **kwargs):
         u.remove_nested_dm(PGDatabase, "instance", self, session=session)
         u.remove_nested_dm(PGUser, "instance", self, session=session)

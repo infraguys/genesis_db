@@ -288,7 +288,6 @@ WHERE d.datname not in """
         self._reconcile_target_databases()
 
     def restore_from_dp(self) -> None:
-        LOG.info("restore_from_dp")
         self._fill_actual_users()
         self._fill_actual_databases()
         self._fill_DCS()

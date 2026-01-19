@@ -58,7 +58,7 @@ class GeneralService(basic.BasicService):
             password="admin",
             user_api_base_url="http://10.20.0.2:11010",
             project_id=sys_uuid.UUID("11111112-f41d-40ff-b530-e8f4e70b53ca"),
-            node_set="/v1/sets/",
+            node_set="/v1/compute/sets/",
             config="/v1/config/configs/",
         )
 

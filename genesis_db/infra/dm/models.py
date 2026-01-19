@@ -90,8 +90,10 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
             name=f"dbaas-{self.name}",
             cores=self.cpu,
             ram=self.ram,
-            root_disk_size=self.disk_size,
-            image=self.version.image,
+            disk_spec=sdk_models.SetRootDiskSpec(
+                size=self.disk_size,
+                image=self.version.image,
+            ),
             replicas=self.nodes_number,
             project_id=project_id,
             status=sdk_c.NodeStatus.NEW.value,

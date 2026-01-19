@@ -15,6 +15,7 @@
 #    under the License.
 
 from gcl_iam import middlewares as iam_mw
+from gcl_iam import drivers
 from restalchemy.api import applications
 from restalchemy.api.middlewares import logging as logging_mw
 from restalchemy.api import middlewares
@@ -63,7 +64,7 @@ def get_openapi_engine():
     return openapi_engine
 
 
-def build_wsgi_application(token_algorithm, iam_engine_driver=None):
+def build_wsgi_application(iam_engine_driver):
     return middlewares.attach_middlewares(
         applications.OpenApiApplication(
             route_class=get_api_application(),
@@ -72,7 +73,6 @@ def build_wsgi_application(token_algorithm, iam_engine_driver=None):
         [
             middlewares.configure_middleware(
                 iam_mw.GenesisCoreAuthMiddleware,
-                token_algorithm=token_algorithm,
                 iam_engine_driver=iam_engine_driver,
                 skip_auth_endpoints=skip_auth_endpoints,
             ),

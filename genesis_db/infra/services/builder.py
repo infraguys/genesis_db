@@ -19,6 +19,9 @@ import uuid as sys_uuid
 import typing as tp
 import uuid
 
+from oslo_config import cfg
+
+from gcl_looper.services.oslo import base as oslo_base
 from gcl_sdk.infra.services import builder
 from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
@@ -131,15 +134,39 @@ tags:
 """
 
 
-class CoreInfraBuilder(builder.CoreInfraBuilder):
-
+class CoreInfraBuilder(
+    builder.CoreInfraBuilder, oslo_base.OsloConfigurableService
+):
     def __init__(
         self,
-        instance_model: tp.Type[models.PGInstance],
-        project_id: sys_uuid.UUID,
+        instance_model: str,
+        # instance_model: tp.Type[models.PGInstance],
+        project_id: str,
     ):
+        instance_model
+
         super().__init__(instance_model)
-        self._project_id = project_id
+        self._project_id = sys_uuid.UUID(project_id)
+    
+    @classmethod
+    def svc_get_config_opts(cls) -> tp.Collection[cfg.Opt]:
+        """Return Oslo config options for the service."""
+        return [
+            cfg.StrOpt(
+                "instance_model",
+                default=None,
+                help=(
+                    "Instance model to use for the builder."
+                ),
+            ),
+            cfg.StrOpt(
+                "project_id",
+                default=None,
+                help=(
+                    "Project ID to use for the builder."
+                ),
+            ),
+        ]
 
     def create_infra(
         self, instance: models.PGInstance

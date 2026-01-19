@@ -19,6 +19,7 @@ import sys
 
 from gcl_looper.services import bjoern_service
 from gcl_looper.services import hub
+from gcl_iam import drivers
 from gcl_iam import opts as iam_opts
 from oslo_config import cfg
 from restalchemy.common import config_opts as ra_config_opts
@@ -64,8 +65,6 @@ def main():
     infra_log.configure()
     log = logging.getLogger(__name__)
 
-    token_algorithm = iam_opts.get_token_encryption_algorithm(CONF)
-
     log.info(
         "Start service on %s:%s",
         CONF[DOMAIN].bind_host,
@@ -73,12 +72,15 @@ def main():
     )
 
     service_hub = hub.ProcessHubService()
+    iam_driver = drivers.HttpDriver(
+        CONF.iam.iam_endpoint,
+        CONF.iam.audience,
+        CONF.iam.hs256_jwks_decryption_key,
+    )
 
     for _ in range(CONF[DOMAIN].workers):
         service = bjoern_service.BjoernService(
-            wsgi_app=app.build_wsgi_application(
-                token_algorithm=token_algorithm,
-            ),
+            wsgi_app=app.build_wsgi_application(iam_driver),
             host=CONF[DOMAIN].bind_host,
             port=CONF[DOMAIN].bind_port,
             bjoern_kwargs=dict(reuse_port=True),

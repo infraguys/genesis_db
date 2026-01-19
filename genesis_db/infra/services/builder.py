@@ -178,9 +178,6 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
         if nodeset.nodes:
             instance.ipsv4 = [node["ipv4"] for node in nodeset.nodes.values()]
 
-        if nodeset.status != sdk_c.NodeStatus.ACTIVE.value:
-            return infra.targets()
-
         new_objects = []
 
         node_raft_members = [
@@ -217,11 +214,11 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             elif target.get_resource_kind() == NODE_SET_KIND:
                 target.cores = instance.cpu
                 target.ram = instance.ram
-                target.image = instance.version.image
+                target.disk_spec = sdk_models.SetRootDiskSpec(
+                    size=instance.disk_size,
+                    image=instance.version.image,
+                )
                 target.replicas = instance.nodes_number
-                # This action wipe out the disk.
-                # Rethink this part when we have persistent volumes.
-                # target.root_disk_size = instance.disk_size
                 tgt_nodeset = target
             else:
                 LOG.exception(

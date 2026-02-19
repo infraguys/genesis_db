@@ -35,7 +35,6 @@ class PGInstanceNode(
     ra_models.ModelWithUUID,
     ua_models.TargetResourceKindAwareMixin,
 ):
-
     status = properties.property(
         ra_types.Enum([s.value for s in pc.InstanceStatus]),
         default=pc.InstanceStatus.NEW.value,
@@ -44,9 +43,7 @@ class PGInstanceNode(
     name = properties.property(ra_types.String(min_length=1, max_length=64))
     databases = properties.property(ra_types.Dict())
     users = properties.property(ra_types.Dict())
-    nodes_number = properties.property(
-        ra_types.Integer(min_value=1, max_value=16)
-    )
+    nodes_number = properties.property(ra_types.Integer(min_value=1, max_value=16))
     sync_replica_number = properties.property(
         ra_types.Integer(min_value=0, max_value=15)
     )
@@ -77,7 +74,6 @@ class PGInstance(
     models.PGInstance,
     ua_models.InstanceWithDerivativesMixin,
 ):
-
     __master_model__ = sdk_models.NodeSet
     __derivative_model_map__ = {
         "pg_instance_node": PGInstanceNode,

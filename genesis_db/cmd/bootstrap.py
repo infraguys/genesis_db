@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 from gcl_iam.tests.functional import clients as iam_clients
 from oslo_config import cfg
 
@@ -52,19 +50,10 @@ def main():
     # Parse command-line options
     cfg.CONF()
 
-    # Configure logging
-    log = logging.getLogger(__name__)
+    auth = iam_clients.GenesisCoreAuth(username=CONF.login, password=CONF.password)
+    client = iam_clients.GenesisCoreTestRESTClient(endpoint=CONF.endpoint, auth=auth)
 
-    auth = iam_clients.GenesisCoreAuth(
-        username=CONF.login, password=CONF.password
-    )
-    client = iam_clients.GenesisCoreTestRESTClient(
-        endpoint=CONF.endpoint, auth=auth
-    )
-
-    org = client.create_or_get_organization(
-        ORGANIZATION_UUID, name=ORGANIZATION_NAME
-    )
+    org = client.create_or_get_organization(ORGANIZATION_UUID, name=ORGANIZATION_NAME)
     proj = client.create_or_get_project(org["uuid"], name=PROJECT_NAME)
 
     perms_by_name = {}

@@ -20,7 +20,6 @@ import typing as tp
 import uuid
 
 from gcl_sdk.paas.services import builder
-from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
 
@@ -33,7 +32,6 @@ AGENT_UUID5_NAME = "dbaas"
 
 
 class PaaSBuilder(builder.PaaSBuilder):
-
     @classmethod
     def agent_uuid_by_node(cls, node_uuid: sys_uuid.UUID) -> sys_uuid.UUID:
         return sys_uuid.uuid5(node_uuid, AGENT_UUID5_NAME)
@@ -42,9 +40,7 @@ class PaaSBuilder(builder.PaaSBuilder):
         self,
         instance: ua_models.InstanceWithDerivativesMixin,
         paas_objects: tp.Collection[ua_models.TargetResourceKindAwareMixin],
-    ) -> dict[
-        sys_uuid.UUID, tp.Collection[ua_models.TargetResourceKindAwareMixin]
-    ]:
+    ) -> dict[sys_uuid.UUID, tp.Collection[ua_models.TargetResourceKindAwareMixin]]:
         """Schedule the PaaS objects.
 
         The method schedules the PaaS objects. The result is a dictionary
@@ -60,7 +56,6 @@ class PaaSBuilder(builder.PaaSBuilder):
 
 
 class PGInstanceBuilder(PaaSBuilder):
-
     def __init__(
         self,
         instance_model: tp.Type[models.PGInstance] = models.PGInstance,
@@ -77,9 +72,7 @@ class PGInstanceBuilder(PaaSBuilder):
         }
 
     def _get_databases(self, instance):
-        return {
-            d.name: {"owner": d.owner.name} for d in instance.get_databases()
-        }
+        return {d.name: {"owner": d.owner.name} for d in instance.get_databases()}
 
     def create_paas_objects(
         self, instance: models.PGInstance
@@ -114,9 +107,7 @@ class PGInstanceBuilder(PaaSBuilder):
         for i in range(instance.nodes_number):
             actual_resources.append(
                 models.PGInstanceNode(
-                    uuid=PaaSBuilder.agent_uuid_by_node(
-                        uuid.UUID(nodes_by_idx[i])
-                    ),
+                    uuid=PaaSBuilder.agent_uuid_by_node(uuid.UUID(nodes_by_idx[i])),
                     name=instance.name,
                     instance=instance,
                     nodes_number=instance.nodes_number,

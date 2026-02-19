@@ -41,6 +41,8 @@ sudo apt dist-upgrade -y
 sudo apt install -y \
     postgresql \
     libev-dev
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME"/.local/bin/env
 
 # Default creds for genesis db services
 sudo -u postgres psql -c "CREATE ROLE $GC_PG_USER WITH LOGIN PASSWORD '$GC_PG_PASS';"
@@ -53,17 +55,14 @@ sudo cp "$GC_PATH/etc/genesis_db/core_agent.conf" $GC_CFG_DIR/
 sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
 sudo cp "$GC_PATH/genesis/images/bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
 
-mkdir -p "$VENV_PATH"
-python3 -m venv "$VENV_PATH"
+cd "$GC_PATH"
+uv sync
 source "$GC_PATH"/.venv/bin/activate
-pip install pip --upgrade
-pip install -r "$GC_PATH"/requirements.txt
-pip install -e "$GC_PATH"
 
 # In the dev mode the gcl_sdk package is installed from the local machine
 if [[ "$SDK_DEV_MODE" == "true" ]]; then
-    pip uninstall -y gcl_sdk
-    pip install -e "$DEV_SDK_PATH"
+    uv pip uninstall -y gcl_sdk
+    uv pip install -e "$DEV_SDK_PATH"
     # Apply SDK migrations
     ra-apply-migration --config-dir "/etc/genesis_db/" --path "/opt/gcl_sdk/gcl_sdk/migrations"
 else

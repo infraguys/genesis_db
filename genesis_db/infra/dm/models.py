@@ -25,7 +25,6 @@ from genesis_db.user_api.dm import models
 
 
 class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
-
     __derivative_model_map__ = {
         "node_set": sdk_models.NodeSet,
         "node": sdk_models.Node,
@@ -56,9 +55,7 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
             )
         )
 
-    OnReloadFunc = sdk_models.OnChangeShell(
-        command="systemctl reload genesis-patroni"
-    )
+    OnReloadFunc = sdk_models.OnChangeShell(command="systemctl reload genesis-patroni")
 
     def _create_config(self, node_uuid, project_id, content=""):
         config = sdk_models.Config(

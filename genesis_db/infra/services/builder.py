@@ -132,7 +132,6 @@ tags:
 
 
 class CoreInfraBuilder(builder.CoreInfraBuilder):
-
     def __init__(
         self,
         instance_model: tp.Type[models.PGInstance],
@@ -185,8 +184,7 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
         new_objects = []
 
         node_raft_members = [
-            f"{node['ipv4']}:{PATRONI_RAFT_PORT}"
-            for node in nodeset.nodes.values()
+            f"{node['ipv4']}:{PATRONI_RAFT_PORT}" for node in nodeset.nodes.values()
         ]
         # In case of shrink we still has all nodes but only lower nodes_number
         if (diff_num := len(node_raft_members) - instance.nodes_number) > 0:

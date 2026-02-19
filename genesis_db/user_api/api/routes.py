@@ -41,7 +41,6 @@ class PGVersionRoute(routes.Route):
 
 
 class PGRoute(routes.Route):
-
     __controller__ = controllers.PGController
     __allow_methods__ = [routes.FILTER]
 

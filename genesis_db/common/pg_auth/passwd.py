@@ -73,9 +73,7 @@ def scram_sha_256(password, salt_bytes=None, iterations=4096):
     if salt_bytes is None:
         salt_bytes = token_bytes(16)
     password = saslprep.saslprep(password).encode("utf-8")
-    salted_password = hashlib.pbkdf2_hmac(
-        "sha256", password, salt_bytes, iterations
-    )
+    salted_password = hashlib.pbkdf2_hmac("sha256", password, salt_bytes, iterations)
     stored_key = hmac.new(salted_password, b"Client Key", "sha256").digest()
     stored_key = hashlib.sha256(stored_key).digest()
     server_key = hmac.new(salted_password, b"Server Key", "sha256").digest()

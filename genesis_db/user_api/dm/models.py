@@ -22,7 +22,6 @@ from restalchemy.dm import models
 from restalchemy.dm import properties
 from restalchemy.dm import relationships
 from restalchemy.dm import types
-from restalchemy.dm import types_dynamic
 from restalchemy.storage.sql import orm
 from gcl_sdk.agents.universal.dm import models as ua_models
 
@@ -82,20 +81,14 @@ class PGInstance(
     )
     cpu = properties.property(types.Integer(min_value=1, max_value=128))
     ram = properties.property(types.Integer(min_value=512, max_value=1024**3))
-    disk_size = properties.property(
-        types.Integer(min_value=8, max_value=1024**3)
-    )
+    disk_size = properties.property(types.Integer(min_value=8, max_value=1024**3))
     # TODO: restrict shrink/support shrink
-    nodes_number = properties.property(
-        types.Integer(min_value=1, max_value=16)
-    )
+    nodes_number = properties.property(types.Integer(min_value=1, max_value=16))
     sync_replica_number = properties.property(
         types.Integer(min_value=0, max_value=15), default=1
     )
     # TODO: support version update
-    version = relationships.relationship(
-        PGVersion, required=True, read_only=True
-    )
+    version = relationships.relationship(PGVersion, required=True, read_only=True)
 
     def get_users(self, session=None):
         return PGUser.objects.get_all(
@@ -121,9 +114,7 @@ class InstanceChildModel(
     ua_models.TargetResourceMixin,
     orm.SQLStorableMixin,
 ):
-    instance = relationships.relationship(
-        PGInstance, required=True, read_only=True
-    )
+    instance = relationships.relationship(PGInstance, required=True, read_only=True)
 
     def touch_parent(self, session=None):
         # Now we enforce dataplane updates via parent model, so we don't need
@@ -154,9 +145,7 @@ class PGUser(InstanceChildModel):
         default=PGStatus.ACTIVE.value,
     )
     password = properties.property(types.String(min_length=8, max_length=99))
-    password_hash = properties.property(
-        types.String(min_length=1, max_length=512)
-    )
+    password_hash = properties.property(types.String(min_length=1, max_length=512))
 
     def _update_pw_hash(self):
         self.password_hash = passwd.scram_sha_256(self.password)

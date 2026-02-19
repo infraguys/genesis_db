@@ -21,7 +21,6 @@ import uuid as sys_uuid
 from gcl_looper.services import basic
 
 from genesis_db.paas.services import builder as paas_builder
-from genesis_db.paas.dm import models as paas_models
 from genesis_db.infra.services import builder as infra_builder
 from genesis_db.infra.dm import models as infra_models
 
@@ -36,7 +35,6 @@ LOG = logging.getLogger(__name__)
 
 
 class GeneralService(basic.BasicService):
-
     def __init__(self, iter_min_period: float = 1, iter_pause: float = 0.1):
         super().__init__(iter_min_period, iter_pause)
 

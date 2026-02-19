@@ -31,7 +31,6 @@ class ApiEndpointController(ra_controllers.RoutesListController):
 
 
 class TypeController(ra_controllers.Controller):
-
     def filter(self, filters, order_by):
         return ["postgres"]
 

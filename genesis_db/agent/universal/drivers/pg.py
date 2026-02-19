@@ -21,14 +21,9 @@ import logging
 import requests
 from requests.auth import HTTPBasicAuth
 import time
-import typing as tp
 
 from restalchemy.dm import types as ra_types
-from restalchemy.dm import properties
-from gcl_sdk.agents.universal.drivers import base
 from gcl_sdk.agents.universal.drivers import meta
-from gcl_sdk.agents.universal.drivers import exceptions as driver_exc
-from gcl_sdk.agents.universal import constants as c
 from gcl_sdk.infra import constants as pc
 import psycopg
 from psycopg import sql
@@ -39,7 +34,6 @@ from restalchemy.dm import properties
 
 
 from genesis_db.common import constants
-from genesis_db.common.pg_auth import passwd
 
 
 LOG = logging.getLogger(__name__)
@@ -91,7 +85,6 @@ class PatroniClient:
 
 
 class ClientsSingleton(singletons.InheritSingleton):
-
     def __init__(self):
         self.reinit_pclient()
         self.reinit_psql()
@@ -127,16 +120,13 @@ def on_primary_only(method):
 
 
 class PGInstance(meta.MetaDataPlaneModel):
-
     name = properties.property(
         ra_types.String(min_length=1, max_length=512),
         required=True,
     )
     databases = properties.property(ra_types.Dict(), default={})
     users = properties.property(ra_types.Dict(), default={})
-    nodes_number = properties.property(
-        ra_types.Integer(min_value=1, max_value=16)
-    )
+    nodes_number = properties.property(ra_types.Integer(min_value=1, max_value=16))
     sync_replica_number = properties.property(
         ra_types.Integer(min_value=0, max_value=15)
     )
@@ -165,9 +155,7 @@ class PGInstance(meta.MetaDataPlaneModel):
         for tname, t in self.users.items():
             if tname not in actual_users:
                 self.c.psql.execute(
-                    sql.SQL(
-                        "CREATE USER {username} WITH PASSWORD {password}"
-                    ).format(
+                    sql.SQL("CREATE USER {username} WITH PASSWORD {password}").format(
                         username=sql.Identifier(tname),
                         password=sql.Literal(t["pw_hash"].replace("'", "''")),
                     )
@@ -178,9 +166,7 @@ class PGInstance(meta.MetaDataPlaneModel):
 
             if t["pw_hash"] != actual_users[tname]:
                 self.c.psql.execute(
-                    sql.SQL(
-                        "ALTER USER {username} WITH PASSWORD {password}"
-                    ).format(
+                    sql.SQL("ALTER USER {username} WITH PASSWORD {password}").format(
                         username=sql.Identifier(tname),
                         password=sql.Literal(t["pw_hash"].replace("'", "''")),
                     )
@@ -196,9 +182,7 @@ class PGInstance(meta.MetaDataPlaneModel):
             if aname not in self.users:
                 try:
                     self.c.psql.execute(
-                        sql.SQL("DROP USER IF EXISTS {}").format(
-                            sql.Identifier(aname)
-                        )
+                        sql.SQL("DROP USER IF EXISTS {}").format(sql.Identifier(aname))
                     )
                 except psycopg.errors.DependentObjectsStillExist:
                     LOG.warning(
@@ -244,9 +228,7 @@ WHERE d.datname not in """
                             sql.Identifier(tname), sql.Literal(t["owner"])
                         )
                     )
-                    LOG.info(
-                        "Owner of database %s altered to %s", tname, t["owner"]
-                    )
+                    LOG.info("Owner of database %s altered to %s", tname, t["owner"])
 
                 continue
 

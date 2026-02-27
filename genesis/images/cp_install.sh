@@ -26,9 +26,7 @@ GC_CFG_DIR=/etc/genesis_db
 VENV_PATH="$GC_PATH/.venv"
 BOOTSTRAP_PATH="/var/lib/genesis/bootstrap/scripts"
 
-GC_PG_USER="genesis_db"
-GC_PG_PASS="pass"
-GC_PG_DB="genesis_db"
+PG_VERSION="18"
 
 SYSTEMD_SERVICE_DIR=/etc/systemd/system/
 
@@ -39,21 +37,25 @@ SDK_DEV_MODE=$([ -d "$DEV_SDK_PATH" ] && echo "true" || echo "false")
 sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
-    postgresql \
+    postgresql-common \
     libev-dev
+
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME"/.local/bin/env
 
-# Default creds for genesis db services
-sudo -u postgres psql -c "CREATE ROLE $GC_PG_USER WITH LOGIN PASSWORD '$GC_PG_PASS';"
-sudo -u postgres psql -c "CREATE DATABASE $GC_PG_DB OWNER $GC_PG_USER;"
+sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+sudo apt-get update
+sudo apt -y install "postgresql-${PG_VERSION}"
+
+# Note: PostgreSQL database and user creation is done in bootstrap.sh
+# on the persistent disk to ensure data survives OS image updates
 
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
 sudo cp "$GC_PATH/etc/genesis_db/genesis_db.conf" $GC_CFG_DIR/
 sudo cp "$GC_PATH/etc/genesis_db/core_agent.conf" $GC_CFG_DIR/
 sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
-sudo cp "$GC_PATH/genesis/images/bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
+sudo cp "$GC_PATH/genesis/images/cp_bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
 
 cd "$GC_PATH"
 uv sync
@@ -63,16 +65,7 @@ source "$GC_PATH"/.venv/bin/activate
 if [[ "$SDK_DEV_MODE" == "true" ]]; then
     uv pip uninstall -y gcl_sdk
     uv pip install -e "$DEV_SDK_PATH"
-    # Apply SDK migrations
-    ra-apply-migration --config-dir "/etc/genesis_db/" --path "/opt/gcl_sdk/gcl_sdk/migrations"
-else
-    # Apply SDK migrations
-    # TODO: Use a command or apply migration on startup
-    ra-apply-migration --config-dir "/etc/genesis_db/" --path "$VENV_PATH/lib/python3.12/site-packages/gcl_sdk/migrations"
 fi
-
-# Apply migrations
-ra-apply-migration --config-dir "/etc/genesis_db/" --path "$GC_PATH/migrations"
 deactivate
 
 # Create links to venv
@@ -88,11 +81,3 @@ sudo cp "$GC_PATH/etc/systemd/genesis-db-user-api.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-status-api.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-orch-api.service" $SYSTEMD_SERVICE_DIR
 sudo cp "$GC_PATH/etc/systemd/genesis-db-core-agent.service" $SYSTEMD_SERVICE_DIR
-
-# Enable genesis db services
-sudo systemctl enable \
-    genesis-db-gservice \
-    genesis-db-user-api \
-    genesis-db-status-api \
-    genesis-db-orch-api \
-    genesis-db-core-agent

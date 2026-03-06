@@ -27,7 +27,6 @@ from gcl_sdk.infra import constants as pc
 
 from genesis_db.user_api.dm import models
 
-
 LOG = logging.getLogger(__name__)
 
 

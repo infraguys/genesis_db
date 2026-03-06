@@ -1,0 +1,41 @@
+[db]
+connection_url = postgresql://{{ GC_PG_USER }}:{{ GC_PG_PASS }}@localhost:5432/{{ GC_PG_DB }}
+
+[logging]
+config = logging.yaml
+
+[iam]
+# token_encryption_algorithm = HS256
+
+[HS256]
+# encryption_key = secret
+
+[user_api]
+bind_host = 0.0.0.0
+
+[status_api]
+bind_host = 0.0.0.0
+
+[orch_api]
+bind_host = 0.0.0.0
+
+[launchpad]
+common_initializer = genesis_db.cmd.gservice:init_common_conf
+services =
+    genesis_db.infra.services.builder:CoreInfraBuilder,
+    genesis_db.services.gservice:InfraScheduler,
+    genesis_db.services.gservice:UAgent,
+    genesis_db.paas.services.builder:PGInstanceBuilder
+
+[genesis_db.infra.services.builder:CoreInfraBuilder]
+core_username = {{ IAM_USER_NAME }}
+core_password = {{ IAM_USER_PASS }}
+project_id = {{ PROJECT_ID }}
+
+[genesis_db.services.gservice:InfraScheduler]
+capabilities = node_set,config
+
+[genesis_db.services.gservice:UAgent]
+core_username = {{ IAM_USER_NAME }}
+core_password = {{ IAM_USER_PASS }}
+project_id = {{ PROJECT_ID }}

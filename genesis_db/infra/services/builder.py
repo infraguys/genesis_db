@@ -19,10 +19,14 @@ import uuid as sys_uuid
 import typing as tp
 import uuid
 
+from oslo_config import cfg
+from gcl_looper.services.oslo import base as oslo_base
 from gcl_sdk.infra.services import builder
 from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
+from gcl_sdk.agents.universal.drivers import core as core_drivers
+from restalchemy.dm import filters as dm_filters
 
 from genesis_db.infra.dm import models
 
@@ -131,14 +135,52 @@ tags:
 """
 
 
-class CoreInfraBuilder(builder.CoreInfraBuilder):
+class CoreInfraBuilder(builder.CoreInfraBuilder, oslo_base.OsloConfigurableService):
     def __init__(
         self,
-        instance_model: tp.Type[models.PGInstance],
+        core_username,
+        core_password,
+        core_api_base_url,
         project_id: sys_uuid.UUID,
+        instance_model: tp.Type[models.PGInstance] = models.PGInstance,
     ):
         super().__init__(instance_model)
-        self._project_id = project_id
+        self._project_id = sys_uuid.UUID(project_id)
+        # for agents' private keys
+        self.core_driver = core_drivers.RestCoreCapabilityDriver(
+            username=core_username,
+            password=core_password,
+            user_api_base_url=core_api_base_url,
+            project_id=self._project_id,
+            use_project_scope=True,
+            node_set="/v1/compute/sets/",
+            config="/v1/config/configs/",
+        )
+        self._cclient = self.core_driver._client._client
+
+    @classmethod
+    def svc_get_config_opts(cls) -> tp.Collection[cfg.Opt]:
+        return [
+            cfg.StrOpt(
+                "core_username",
+                default="genesis_db",
+                help=("User to work with Core."),
+            ),
+            cfg.StrOpt(
+                "core_password",
+                default="genesis_db",
+                help=("User password to work with Core."),
+            ),
+            cfg.StrOpt(
+                "core_api_base_url",
+                default="http://10.20.0.2:11010",
+                help=("Core's user api endpoint."),
+            ),
+            cfg.StrOpt(
+                "project_id",
+                help=("Project id to work with Core."),
+            ),
+        ]
 
     def create_infra(
         self, instance: models.PGInstance
@@ -183,9 +225,33 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
         node_raft_members = [
             f"{node['ipv4']}:{PATRONI_RAFT_PORT}" for node in nodeset.nodes.values()
         ]
+
+        # TODO: add mechanism to update rotated keys
+        node_keys = self._cclient.do_action(
+            "/v1/compute/sets/", "get_private_keys", nodeset.uuid
+        )
+        for u, v in node_keys.items():
+            if nkey := ua_models.NodeEncryptionKey.objects.get_one_or_none(
+                filters={"uuid": dm_filters.EQ(u)}
+            ):
+                nkey.private_key = v
+                nkey.update()
+            else:
+                nkey = ua_models.NodeEncryptionKey(uuid=uuid.UUID(u), private_key=v)
+                nkey.insert()
+
         # In case of shrink we still has all nodes but only lower nodes_number
-        if (diff_num := len(node_raft_members) - instance.nodes_number) > 0:
-            node_raft_members = node_raft_members[:-diff_num]
+        nodes_diff_num = instance.nodes_number - len(node_raft_members)
+        if nodes_diff_num < 0:
+            node_raft_members = node_raft_members[: instance.nodes_number]
+            for idx, del_node_uuid in enumerate(nodeset.nodes.keys()):
+                if idx < instance.nodes_number:
+                    continue
+                # node clean up routines
+                for key in ua_models.NodeEncryptionKey.objects.get_all(
+                    filters={"uuid": dm_filters.EQ(del_node_uuid)}
+                ):
+                    key.delete()
 
         sync_mode = "true" if instance.sync_replica_number else "false"
 
@@ -214,9 +280,18 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             elif target.get_resource_kind() == NODE_SET_KIND:
                 target.cores = instance.cpu
                 target.ram = instance.ram
-                target.disk_spec = sdk_models.SetRootDiskSpec(
-                    size=instance.disk_size,
-                    image=instance.version.image,
+                target.disk_spec = sdk_models.SetDisksSpec(
+                    disks=[
+                        {
+                            "size": models.ROOT_DISK_SIZE,
+                            "image": instance.version.image,
+                            "label": "root",
+                        },
+                        {
+                            "size": instance.disk_size,
+                            "label": "data",
+                        },
+                    ]
                 )
                 target.replicas = instance.nodes_number
                 tgt_nodeset = target
@@ -232,3 +307,24 @@ class CoreInfraBuilder(builder.CoreInfraBuilder):
             instance.status = sdk_c.InstanceStatus.IN_PROGRESS.value
 
         return (tgt_nodeset, *new_objects)
+
+    def pre_delete_instance_resource(self, resource):
+        # Get actual nodeset to clean private keys of it's nodes
+        target_resources = ua_models.TargetResource.objects.get_all(
+            filters={
+                "master": dm_filters.EQ(resource.uuid),
+                "kind": dm_filters.EQ(NODE_SET_KIND),
+            },
+        )
+        actual_resources = ua_models.Resource.objects.get_all(
+            filters={
+                "uuid": dm_filters.In(r.uuid for r in target_resources),
+                "kind": dm_filters.EQ(NODE_SET_KIND),
+            },
+        )
+
+        for ns in actual_resources:
+            for key in ua_models.NodeEncryptionKey.objects.get_all(
+                filters={"uuid": dm_filters.In(ns.value["nodes"].keys())}
+            ):
+                key.delete()

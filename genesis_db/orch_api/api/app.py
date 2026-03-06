@@ -17,11 +17,11 @@
 from restalchemy.api import applications
 from restalchemy.api import middlewares
 from restalchemy.api import routes
-from restalchemy.api.middlewares import contexts as context_mw
 from restalchemy.api.middlewares import errors as errors_mw
 from restalchemy.api.middlewares import logging as logging_mw
 from restalchemy.openapi import structures as openapi_structures
 from restalchemy.openapi import engines as openapi_engines
+from gcl_sdk.agents.universal.api import middlewares as sdk_mw
 
 from genesis_db.orch_api.api import routes as app_routes
 from genesis_db.orch_api.api import versions
@@ -48,7 +48,7 @@ def get_openapi_engine():
     openapi_engine = openapi_engines.OpenApiEngine(
         info=openapi_structures.OpenApiInfo(
             title=f"Genesis DB {versions.API_VERSION_v1} Orch API",
-            version=version.version_info.release_string(),
+            version=version.version_info,
             description=f"OpenAPI - Genesis DB {versions.API_VERSION_v1}",
         ),
         paths=openapi_structures.OpenApiPaths(),
@@ -64,7 +64,7 @@ def build_wsgi_application():
             openapi_engine=get_openapi_engine(),
         ),
         [
-            context_mw.ContextMiddleware,
+            sdk_mw.SdkContextMiddleware,
             errors_mw.ErrorsHandlerMiddleware,
             logging_mw.LoggingMiddleware,
         ],

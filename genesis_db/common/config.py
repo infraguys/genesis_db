@@ -21,7 +21,6 @@ from oslo_config import cfg
 from genesis_db.common import constants
 from genesis_db import version
 
-
 GLOBAL_SERVICE_NAME = constants.GLOBAL_SERVICE_NAME
 
 

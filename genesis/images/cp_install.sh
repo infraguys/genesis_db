@@ -38,7 +38,8 @@ sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
     postgresql-common \
-    libev-dev
+    libev-dev \
+    j2cli
 
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME"/.local/bin/env
@@ -46,14 +47,15 @@ source "$HOME"/.local/bin/env
 sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
 sudo apt-get update
 sudo apt -y install "postgresql-${PG_VERSION}"
+sudo systemctl disable --now "postgresql"
 
 # Note: PostgreSQL database and user creation is done in bootstrap.sh
 # on the persistent disk to ensure data survives OS image updates
 
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
-sudo cp "$GC_PATH/etc/genesis_db/genesis_db.conf" $GC_CFG_DIR/
-sudo cp "$GC_PATH/etc/genesis_db/core_agent.conf" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/genesis_db/genesis_db.conf.j2" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/genesis_db/core_agent.conf.j2" $GC_CFG_DIR/
 sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
 sudo cp "$GC_PATH/genesis/images/cp_bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
 

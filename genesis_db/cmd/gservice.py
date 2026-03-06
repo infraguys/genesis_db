@@ -18,13 +18,11 @@ import logging
 import sys
 
 from oslo_config import cfg
+from gcl_looper.services.oslo import launchpad
 from restalchemy.common import config_opts as ra_config_opts
 from restalchemy.storage.sql import engines
 
-from genesis_db.common import config
 from genesis_db.common import log as infra_log
-from genesis_db.services import gservice
-
 
 DOMAIN = "gservice"
 
@@ -32,19 +30,21 @@ CONF = cfg.CONF
 ra_config_opts.register_posgresql_db_opts(CONF)
 
 
-def main():
-    # Parse config
-    config.parse(sys.argv[1:])
-
-    # Configure logging
+def init_common_conf(CONF):
     infra_log.configure()
-    log = logging.getLogger(__name__)
-
     engines.engine_factory.configure_postgresql_factory(CONF)
 
-    service = gservice.GeneralService(iter_min_period=3)
 
-    service.start()
+def main():
+    # Parse config
+    # config.parse(sys.argv[1:])
+
+    # Configure logging
+    # infra_log.configure()
+    log = logging.getLogger(__name__)
+
+    launchpad_svc = launchpad.LaunchpadService.from_cmd_line(sys.argv[1:])
+    launchpad_svc.start()
 
     log.info("Bye!!!")
 

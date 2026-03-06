@@ -25,6 +25,7 @@ GC_PATH="/opt/genesis_db"
 GC_CFG_DIR=/etc/genesis_db
 WORK_DIR="/var/lib/genesis/genesis_db"
 VENV_PATH="$GC_PATH/.venv"
+BOOTSTRAP_PATH="/var/lib/genesis/bootstrap/scripts"
 
 SYSTEMD_SERVICE_DIR=/etc/systemd/system/
 
@@ -46,6 +47,7 @@ sudo mkdir -p $GC_CFG_DIR
 sudo mkdir -p $WORK_DIR
 sudo cp "$GC_PATH/etc/genesis_db/genesis_pg_agent.conf" $GC_CFG_DIR/
 sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
+sudo cp "$GC_PATH/genesis/images/pg_bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
 
 cd "$GC_PATH"
 uv sync
@@ -116,10 +118,6 @@ mkdir -p ~/.config/patroni
 ln -sf "/var/lib/postgresql/patroni/patroni.yml" ~/.config/patroni/patronictl.yaml
 ln -sf "/var/lib/postgresql/patroni" ~/patroni
 EOF
-
-# Enable genesis db services
-sudo systemctl enable \
-    genesis-patroni
 
 # Lab mode
 LAB_MODE=${LAB_MODE-}

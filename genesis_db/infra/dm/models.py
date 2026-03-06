@@ -23,6 +23,8 @@ from gcl_sdk.agents.universal.dm import models as ua_models
 
 from genesis_db.user_api.dm import models
 
+ROOT_DISK_SIZE = 6
+
 
 class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
     __derivative_model_map__ = {
@@ -55,7 +57,9 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
             )
         )
 
-    OnReloadFunc = sdk_models.OnChangeShell(command="systemctl reload genesis-patroni")
+    OnReloadFunc = sdk_models.OnChangeShell(
+        command="systemctl try-reload-or-restart genesis-patroni"
+    )
 
     def _create_config(self, node_uuid, project_id, content=""):
         config = sdk_models.Config(
@@ -87,12 +91,21 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
 
         node_set = sdk_models.NodeSet(
             uuid=self.uuid,
-            name=f"dbaas-{self.name}",
+            name=f"dbaas-dp-{self.uuid}",
             cores=self.cpu,
             ram=self.ram,
-            disk_spec=sdk_models.SetRootDiskSpec(
-                size=self.disk_size,
-                image=self.version.image,
+            disk_spec=sdk_models.SetDisksSpec(
+                disks=[
+                    {
+                        "size": ROOT_DISK_SIZE,
+                        "image": self.version.image,
+                        "label": "root",
+                    },
+                    {
+                        "size": self.disk_size,
+                        "label": "data",
+                    },
+                ]
             ),
             replicas=self.nodes_number,
             project_id=project_id,

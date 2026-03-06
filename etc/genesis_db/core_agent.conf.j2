@@ -1,9 +1,5 @@
-[DEFAULT]
-verbose = True
-debug = True
-
 [db]
-connection_url = postgresql://genesis_db:pass@localhost:5432/genesis_db
+connection_url = postgresql://{{ GC_PG_USER }}:{{ GC_PG_PASS }}@localhost:5432/{{ GC_PG_DB }}
 connection_pool_max_size = 4
 
 [agent]

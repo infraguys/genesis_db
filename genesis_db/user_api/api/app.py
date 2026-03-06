@@ -15,7 +15,6 @@
 #    under the License.
 
 from gcl_iam import middlewares as iam_mw
-from gcl_iam import drivers
 from restalchemy.api import applications
 from restalchemy.api.middlewares import logging as logging_mw
 from restalchemy.api import middlewares
@@ -27,7 +26,6 @@ from genesis_db.common.api.middlewares import errors as errors_mw
 from genesis_db.user_api.api import routes as app_routes
 from genesis_db.user_api.api import versions
 from genesis_db import version as app_version
-
 
 skip_auth_endpoints = [
     iam_mw.EndpointComparator("/"),
@@ -55,7 +53,7 @@ def get_openapi_engine():
     openapi_engine = openapi_engines.OpenApiEngine(
         info=openapi_structures.OpenApiInfo(
             title=f"Genesis Db {versions.API_VERSION_1_0} User API",
-            version=app_version.version_info.release_string(),
+            version=app_version.version_info,
             description=(f"OpenAPI - Genesis Db {versions.API_VERSION_1_0}"),
         ),
         paths=openapi_structures.OpenApiPaths(),

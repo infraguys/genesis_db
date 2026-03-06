@@ -35,7 +35,6 @@ from restalchemy.dm import properties
 
 from genesis_db.common import constants
 
-
 LOG = logging.getLogger(__name__)
 
 # NOTE: don't forget to update validation in controlplane

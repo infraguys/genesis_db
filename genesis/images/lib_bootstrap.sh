@@ -206,26 +206,47 @@ migrate_to_persistent() {
         return 1
     fi
 
+    # Create tmp directory name for atomic swap
+    local tmp_dir="${persistent_dir}.tmp"
+
+    # Clean up any leftover tmp directory from previous failed attempts
+    if [[ -d "$tmp_dir" ]]; then
+        echo "Removing leftover tmp directory: $tmp_dir"
+        rm -rf "$tmp_dir"
+    fi
+
     if [ -d "$persistent_dir" ]; then
         echo "Skipping data migration, $persistent_dir dir already exists"
     else
-        echo "Creating persistent directory: $persistent_dir"
-        mkdir -p "$persistent_dir"
-
         if [[ -d "$old_data_dir" ]]; then
-            echo "Migrating data from $old_data_dir to $persistent_dir..."
-            # Copy data to persistent directory using rsync
-            rsync -av "$old_data_dir" "$persistent_dir/"
+            echo "Migrating data from $old_data_dir to $persistent_dir (using atomic swap)..."
+
+            # Create tmp directory for rsync target
+            mkdir -p "$tmp_dir"
+
+            # Copy data to temporary directory using rsync
+            rsync -av "$old_data_dir/" "$tmp_dir/" || {
+                echo "ERROR: rsync failed, cleaning up $tmp_dir"
+                rm -rf "$tmp_dir"
+                return 1
+            }
 
             # Get ownership and permissions from original
             local owner group
             owner=$(stat -c '%U' "$old_data_dir" 2>/dev/null || echo "root")
             group=$(stat -c '%G' "$old_data_dir" 2>/dev/null || echo "root")
-            chown "$owner:$group" "$persistent_dir"
+            chown "$owner:$group" "$tmp_dir"
 
             local perms
             perms=$(stat -c '%a' "$old_data_dir" 2>/dev/null || echo "755")
-            chmod "$perms" "$persistent_dir"
+            chmod "$perms" "$tmp_dir"
+
+            echo "Data copied to tmp directory, performing atomic mv..."
+
+            mv "$tmp_dir" "$persistent_dir" || {
+                echo "ERROR: atomic mv failed"
+                return 1
+            }
 
             echo "Clearing old data directory: $old_data_dir"
             find "$old_data_dir" -mindepth 1 -delete
@@ -244,6 +265,11 @@ migrate_to_persistent() {
     if [[ $(stat -L -c %d:%i "$persistent_dir") != $(stat -L -c %d:%i "$old_data_dir") ]]; then
         echo "Bind mount failed! Please debug the problem"
         exit 1
+    fi
+
+    if [[ "$(pwd)" == "$old_data_dir"* ]]; then
+        # We've migrated path which our process used as CWD, fix it
+        cd "$(pwd)"
     fi
 }
 
@@ -300,6 +326,33 @@ migrate_to_persistent_restart() {
     fi
 }
 
+generate_secure_password()
+{
+    echo $(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32)
+}
+
+# Generate config from template, if it doesn't exist
+# Args:
+#   $1 - path to target config
+try_generate_config() {
+    local config_file="$1"
+    local config_template="${config_file}.j2"
+
+    if [[ -f "$config_file" ]]; then
+        echo "Config file $config_file already exists, do nothing"
+        return 0
+    fi
+
+    if [[ ! -f "$config_template" ]]; then
+        echo "ERROR: Config template $config_template not found"
+        return 1
+    fi
+
+    j2 "$config_template" -o "$config_file"
+
+    echo "Config file created at $config_file"
+}
+
 setup_postgresql_user_and_db() {
     local pg_user="$1"
     local pg_pass="$2"
@@ -320,12 +373,13 @@ setup_postgresql_user_and_db() {
         ((retries--))
     done
 
-    # Create user if not exists
+    # Create user if not exists, or update password if exists
     if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$pg_user'" | grep -q 1; then
         echo "Creating PostgreSQL user $pg_user..."
         sudo -u postgres psql -c "CREATE ROLE $pg_user WITH LOGIN PASSWORD '$pg_pass';"
     else
-        echo "PostgreSQL user $pg_user already exists."
+        echo "PostgreSQL user $pg_user already exists, updating password..."
+        sudo -u postgres psql -c "ALTER ROLE $pg_user WITH PASSWORD '$pg_pass';"
     fi
 
     # Create database if not exists

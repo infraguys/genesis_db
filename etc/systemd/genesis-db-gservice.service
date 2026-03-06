@@ -7,7 +7,7 @@ TimeoutStopSec=5
 Restart=on-failure
 RestartSec=5s
 KillSignal=SIGINT
-ExecStartPre=/bin/sleep 2
+#ExecStart=gcl-looper-launchpad-service --config-file /etc/genesis_db/genesis_db.conf
 ExecStart=genesis-db-gservice --config-file /etc/genesis_db/genesis_db.conf
 
 [Install]

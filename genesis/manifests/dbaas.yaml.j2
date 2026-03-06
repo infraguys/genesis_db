@@ -10,25 +10,172 @@ requirements:
     from_version: "0.0.0"
 
 resources:
+
+  # IAM
+  $core.iam.organizations:
+    dbaas_organization:
+      name: "DBaaS organization"
+      description: "DBaaS organization"
+
+  $core.iam.projects:
+    dbaas_cp_project:
+      name: "DBaaS control-plane project"
+      organization: $core.iam.organizations.$dbaas_organization:uuid
+      description: "DBaaS control-plane project"
+    dbaas_project:
+      name: "DBaaS project"
+      organization: $core.iam.organizations.$dbaas_organization:uuid
+      description: "DBaaS project"
+
+  $core.iam.permissions:
+    pg_instance_create:
+      name: "genesis_db.pg_instance.create"
+    pg_instance_read:
+      name: "genesis_db.pg_instance.read"
+    pg_instance_update:
+      name: "genesis_db.pg_instance.update"
+    pg_instance_delete:
+      name: "genesis_db.pg_instance.delete"
+    database_create:
+      name: "genesis_db.database.create"
+    database_read:
+      name: "genesis_db.database.read"
+    database_update:
+      name: "genesis_db.database.update"
+    database_delete:
+      name: "genesis_db.database.delete"
+    user_create:
+      name: "genesis_db.user.create"
+    user_read:
+      name: "genesis_db.user.read"
+    user_update:
+      name: "genesis_db.user.update"
+    user_delete:
+      name: "genesis_db.user.delete"
+    pg_version_read:
+      name: "genesis_db.pg_version.read"
+
+  $core.iam.permissionbinding:
+    pg_instance_create_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$pg_instance_create:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    pg_instance_read_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$pg_instance_read:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    pg_instance_update_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$pg_instance_update:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    pg_instance_delete_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$pg_instance_delete:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    database_create_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$database_create:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    database_read_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$database_read:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    database_update_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$database_update:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    database_delete_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$database_delete:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    user_create_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$user_create:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    user_read_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$user_read:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    user_update_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$user_update:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    user_delete_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$user_delete:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+    pg_version_read_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      permission: $core.iam.permissions.$pg_version_read:uuid
+      project_id: $core.iam.projects.$dbaas_project:uuid
+
+  $core.iam.users:
+    dbaas_user:
+      uuid: 251cf57a-b0a5-46aa-84d7-33ebddf926c8
+      username: dbaas
+      first_name: "DBaaS system user"
+      last_name: "DBaaS system user"
+      email: "noreply@genesis-core.tech"
+      password: $core.secret.passwords.$dbaas_user_password:value
+
+  $core.iam.rolebinding:
+    dbaas_role_binding:
+      role: "726f6c65-0000-0000-0000-000000000002"
+      # Hack, should be fixed
+      user: 251cf57a-b0a5-46aa-84d7-33ebddf926c8
+      project: $core.iam.projects.$dbaas_project:uuid
+
+  # Secret
+  $core.secret.passwords:
+    dbaas_user_password:
+      name: dbaas_user_password
+      description: "DBaaS system user password"
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      constructor:
+        kind: plain
+      method: AUTO_HEX
+
+  # Compute
   $core.compute.nodes:
     dbaas_cp:
-      uuid: "bcb1407f-269b-4e30-a104-c22e677483a2"
-      name: dbaas_cp
+      name: dbaas-cp
       project_id: "12345678-c625-4fee-81d5-f691897b8142"
-      root_disk_size: 15
       cores: 1
-      ram: 1024
-      image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db.raw.gz
+      ram: 2048
+      disk_spec:
+        kind: "disks"
+        disks:
+          - size: 6
+            image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db.raw.gz
+            label: root
+          - size: 10
+            label: data
 
+  # Config
+  $core.config.configs:
+    dbaas_cp_config:
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      path: /etc/genesis_init.txt
+      target:
+        kind: node
+        node: $core.compute.nodes.$dbaas_cp:uuid
+      body:
+        kind: text
+        content: |
+          f"
+          IAM_USER_NAME={$core.iam.users.$dbaas_user:username}
+          IAM_USER_PASS={$core.secret.passwords.$dbaas_user_password:value}
+          PROJECT_ID={$core.iam.projects.$dbaas_project:uuid}
+          "
+
+  # DBaaS
   $dbaas.types.postgres.versions:
     pg18:
-      uuid: "26786c09-d175-44e5-9013-ac14c88acd1c"
       name: "pg18"
       image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db-pg.raw.gz
 
   $dbaas.imports.$core_local_domain.records:
     dbaas_cp:
-      uuid: "1eb53a9a-1632-405e-a4d0-f497fd1f00dd"
       domain: "$dbaas.imports.$core_local_domain:uuid"
       project_id: "12345678-c625-4fee-81d5-f691897b8142"
       type: "A"

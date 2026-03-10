@@ -1,6 +1,6 @@
 [project]
 name = "genesis_db"
-description = "BaaS for Genesis Core"
+description = "DBaaS for Genesis Core"
 readme = "README.md"
 authors = [{name = "Genesis Corporation", email = "mail@gmelikov.ru"}]
 dynamic = ["version"]

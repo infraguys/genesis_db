@@ -26,6 +26,7 @@ from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
 from gcl_sdk.agents.universal.dm import models as ua_models
 from gcl_sdk.agents.universal.drivers import core as core_drivers
+from gcl_sdk.common.oslo import types as sdk_cfg_types
 from restalchemy.dm import filters as dm_filters
 
 from genesis_db.infra.dm import models
@@ -145,7 +146,7 @@ class CoreInfraBuilder(builder.CoreInfraBuilder, oslo_base.OsloConfigurableServi
         instance_model: tp.Type[models.PGInstance] = models.PGInstance,
     ):
         super().__init__(instance_model)
-        self._project_id = sys_uuid.UUID(project_id)
+        self._project_id = project_id
         # for agents' private keys
         self.core_driver = core_drivers.RestCoreCapabilityDriver(
             username=core_username,
@@ -173,10 +174,10 @@ class CoreInfraBuilder(builder.CoreInfraBuilder, oslo_base.OsloConfigurableServi
             ),
             cfg.StrOpt(
                 "core_api_base_url",
-                default="http://10.20.0.2:11010",
+                default="http://core.local.genesis-core.tech:11010",
                 help=("Core's user api endpoint."),
             ),
-            cfg.StrOpt(
+            sdk_cfg_types.UuidOpt(
                 "project_id",
                 help=("Project id to work with Core."),
             ),

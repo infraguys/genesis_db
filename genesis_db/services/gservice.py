@@ -19,7 +19,6 @@ import typing as tp
 
 import os
 import logging
-import uuid as sys_uuid
 
 from gcl_looper.services.oslo import base as oslo_base
 from oslo_config import cfg
@@ -30,6 +29,7 @@ from gcl_sdk.agents.universal.services import agent as agent_service
 from gcl_sdk.agents.universal.services import scheduler as scheduler_service
 from gcl_sdk.agents.universal import utils as ua_utils
 from gcl_sdk.agents.universal.drivers import core as core_drivers
+from gcl_sdk.common.oslo import types as sdk_cfg_types
 from genesis_db.common import constants as cc
 
 LOG = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class UAgent(agent_service.UniversalAgentService, oslo_base.OsloConfigurableServ
             username=core_username,
             password=core_password,
             user_api_base_url=core_api_base_url,
-            project_id=sys_uuid.UUID(project_id),
+            project_id=project_id,
             use_project_scope=True,
             node_set="/v1/compute/sets/",
             config="/v1/config/configs/",
@@ -103,10 +103,10 @@ class UAgent(agent_service.UniversalAgentService, oslo_base.OsloConfigurableServ
             ),
             cfg.StrOpt(
                 "core_api_base_url",
-                default="http://10.20.0.2:11010",
+                default="http://core.local.genesis-core.tech:11010",
                 help=("Core's user api endpoint."),
             ),
-            cfg.StrOpt(
+            sdk_cfg_types.UuidOpt(
                 "project_id",
                 help=("Project id to work with Core."),
             ),

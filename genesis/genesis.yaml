@@ -35,7 +35,7 @@ build:
   # List of elements in the project
   elements:
     # List of images in the element
-    - manifest: manifests/dbaas.yaml
+    - manifest: manifests/dbaas.yaml.j2
       images:
       - name: genesis-db
         format: gz

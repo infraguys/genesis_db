@@ -5,8 +5,7 @@ on:
 
 env:
   ARTIFACTS_PATH: artifacts
-  PROJECT_NAME: genesis_db
-  REPO_ENDPOINT_PUT: http://10.20.0.1:8082
+  REPO_ENDPOINT_PUT: http://10.20.0.1:8082/genesis-elements/dbaas
 
 jobs:
   Build:
@@ -30,19 +29,19 @@ jobs:
 
           VERSION="$(genesis get-version .)"
 
-          genesis build $(pwd)
+          genesis build $(pwd) --inventory
 
-          # Upload the VM image
-          curl -X PUT --upload-file output/genesis-db.raw.gz \
-            $REPO_ENDPOINT_PUT/${PROJECT_NAME}/${VERSION}/genesis-db.raw.gz
-          curl -X PUT --upload-file output/genesis-db-pg.raw.gz \
-            $REPO_ENDPOINT_PUT/${PROJECT_NAME}/${VERSION}/genesis-db-pg.raw.gz
-          curl -X PUT --upload-file output/genesis-db-pg.raw.gz \
-            $REPO_ENDPOINT_PUT/${PROJECT_NAME}/${VERSION}/lab-genesis-db-pg.raw.gz
+          cd ./output
+          find . -type f -printf '%P\0' | while IFS= read -r -d '' file; do
+            echo "Uploading file: $file"
+            curl -X PUT --upload-file "${file}" \
+              "${REPO_ENDPOINT_PUT}/${VERSION}/${file}"
+          done
+          cd -
 
           # Temporary upload step is done in the build script
           echo "${VERSION}" > "${ARTIFACTS_PATH}/version.txt"
-          mv output/*.raw.gz "${ARTIFACTS_PATH}/"
+          mv output/images/*.raw.gz "${ARTIFACTS_PATH}/"
       - name: Set current date as env variable
         id: date
         run: |

@@ -1,0 +1,42 @@
+name: "communal_pg_cluster"
+description: "Genesis communal PG cluster element"
+schema_version: 1
+version: "{{ version }}"
+api_version: "v1"
+
+requirements:
+  core:
+    from_version: "0.0.0"
+  dbaas:
+    from_version: "2.1.0"
+
+resources:
+
+  $dbaas.types.postgres.instances:
+    cluster_pg:
+      name: "communal-pg-cluster"
+      nodes_number: 1
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      cpu: $communal_pg_cluster.imports.$var_default_cores:value
+      ram: $communal_pg_cluster.imports.$var_default_ram:value
+      # TODO(akremenetsky): Make it configurable
+      disk_size: 50
+      version: $communal_pg_cluster.imports.$pg18:uuid
+
+imports:
+  pg18:
+    element: "$dbaas"
+    kind: "resource"
+    link: "$dbaas.types.postgres.versions.$pg18"
+  var_default_cores:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_cores"
+  var_default_ram:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$default_ram"
+
+exports:
+  cluster:
+    link: "$dbaas.types.postgres.instances.$cluster_pg"

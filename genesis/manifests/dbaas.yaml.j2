@@ -145,7 +145,7 @@ resources:
         kind: "disks"
         disks:
           - size: 6
-            image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db.raw.gz
+            image: "{{ repository | default('https://repository.genesis-core.tech/genesis-elements') }}/dbaas/{{ version }}/images/genesis-db.raw.gz"
             label: root
           - size: 10
             label: data
@@ -171,7 +171,7 @@ resources:
   $dbaas.types.postgres.versions:
     pg18:
       name: "pg18"
-      image: http://repository.genesis-core.tech:8081/genesis-elements/dbaas/{{ version }}/images/genesis-db-pg.raw.gz
+      image: "{{ repository | default('https://repository.genesis-core.tech/genesis-elements') }}/dbaas/{{ version }}/images/genesis-db-pg.raw.gz"
 
   $dbaas.imports.$core_local_domain.records:
     dbaas_cp:

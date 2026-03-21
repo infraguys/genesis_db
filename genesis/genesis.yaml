@@ -67,3 +67,4 @@ build:
       #     use_backing_file: true
       #   envs:
       #     - LAB_MODE=true
+    - manifest: manifests/communal_pg_cluster.yaml.j2

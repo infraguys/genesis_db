@@ -23,18 +23,14 @@ jobs:
 
           mkdir -p ${ARTIFACTS_PATH}
 
-          # Install DevTools
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install genesis-devtools
-
+          source ~/.profile
           VERSION="$(genesis get-version .)"
 
           genesis build $(pwd) --inventory
 
           # Decode and write the push configuration
           echo "$PUSH_CFG" | base64 -d > genesis/genesis.push.yaml
-          genesis push -c genesis/genesis.push.yaml -t local -f
+          genesis push -c genesis/genesis.push.yaml -t local -f --latest
 
           # Temporary upload step is done in the build script
           echo "${VERSION}" > "${ARTIFACTS_PATH}/version.txt"

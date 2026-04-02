@@ -224,7 +224,7 @@ WHERE d.datname not in """
                 if actual_dbs[tname] != t["owner"]:
                     self.c.psql.execute(
                         sql.SQL("ALTER DATABASE {} OWNER TO {}").format(
-                            sql.Identifier(tname), sql.Literal(t["owner"])
+                            sql.Identifier(tname), sql.Identifier(t["owner"])
                         )
                     )
                     LOG.info("Owner of database %s altered to %s", tname, t["owner"])
@@ -234,6 +234,12 @@ WHERE d.datname not in """
             self.c.psql.execute(
                 sql.SQL("CREATE DATABASE {} OWNER {}").format(
                     sql.Identifier(tname), sql.Literal(t["owner"])
+                )
+            )
+
+            self.c.psql.execute(
+                sql.SQL("REVOKE CONNECT ON DATABASE {} FROM PUBLIC").format(
+                    sql.Identifier(tname)
                 )
             )
 

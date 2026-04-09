@@ -9,6 +9,7 @@ env:
 jobs:
   Build:
     runs-on: self-hosted
+    if : ${{ github.actor != 'dependabot[bot]' }}
     strategy:
       fail-fast: true
     steps:

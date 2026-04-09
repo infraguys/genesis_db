@@ -48,32 +48,41 @@ The PostgreSQL service provides a REST-based API for creating and managing Postg
 - `User`: Database users with authentication and permissions
 
 ### PostgreSQL Instance (PG)
+
 The main PostgreSQL instance entity that manages:
+
 - Status (NEW, IN_PROGRESS, ACTIVE, ERROR)
 - Configuration parameters:
-  - CPU cores (1-128)
-  - RAM (512MB-1TB)
-  - Disk size (8GB-1TB)
-  - Node count (1-16)
-  - Synchronous replica count (0-15)
+    - CPU cores (1-128)
+    - RAM (512MB-1TB)
+    - Disk size (8GB-1TB)
+    - Node count (1-16)
+    - Synchronous replica count (0-15)
 - Version information
 - Associated databases and users
 
 ### Database
+
 Logical databases within the PostgreSQL instance:
+
 - Database name validation (PostgreSQL identifier rules)
 - Owner assignment (must be a valid user)
 - Status management
 
 ### User
+
 Database users for authentication and access control:
+
 - Username validation (PostgreSQL role naming rules)
 - Password management with SCRAM-SHA-256 hashing
 - Status
 
 ### Internal (not visible to user)
+
 #### Node Set
+
 Infrastructure layer that manages the underlying compute resources:
+
 - Multiple nodes for high availability
 - Root disk with PostgreSQL image
 - Data disk for database storage
@@ -116,11 +125,10 @@ Infrastructure layer that manages the underlying compute resources:
 }
 ```
 
-
-
 ## Validation Rules
 
 ### Instance Validation
+
 - CPU must be between 1 and 128 cores
 - RAM must be between 512MB and 1TB
 - Disk size must be between 8GB and 1TB
@@ -129,29 +137,33 @@ Infrastructure layer that manages the underlying compute resources:
 - Disk size shrink is not supported
 
 ### Database Validation
+
 - Database names must follow PostgreSQL identifier rules:
-  - Start with letter or underscore
-  - Contain only letters, numbers, and underscores
-  - Maximum length of 63 characters
+    - Start with letter or underscore
+    - Contain only letters, numbers, and underscores
+    - Maximum length of 63 characters
 - Database owner must be a valid user
 
 ### User Validation
+
 - Usernames must follow PostgreSQL role naming rules:
-  - Cannot start with "pg_", "dbaas_", or "postgres"
-  - Start with letter or underscore
-  - Contain only letters, numbers, underscores, and dollar signs
-  - Maximum length of 63 characters
+    - Cannot start with "pg_", "dbaas_", or "postgres"
+    - Start with letter or underscore
+    - Contain only letters, numbers, underscores, and dollar signs
+    - Maximum length of 63 characters
 - Password must be between 8 and 99 characters
 
 ## Status Management
 
 ### Instance Status Lifecycle
+
 1. **NEW**: Instance created, infrastructure provisioning started
 2. **IN_PROGRESS**: Infrastructure being provisioned, PostgreSQL being installed
 3. **ACTIVE**: Instance ready for use
 4. **ERROR**: Provisioning or configuration failed
 
 ### Component Status
+
 - Nodes: NEW → IN_PROGRESS → ACTIVE → ERROR
 - Databases: NEW → ACTIVE → ERROR
 - Users: NEW → ACTIVE → ERROR
@@ -224,12 +236,15 @@ resources:
 ## PostgreSQL Versions API
 
 ### Version Management
+
 The `/v1/types/postgres/versions/` endpoint provides access to available PostgreSQL versions and their configurations.
 
 #### GET /v1/types/postgres/versions/
+
 Retrieve a list of all available PostgreSQL versions.
 
 **Response Format:**
+
 ```json
 {
   "versions": [
@@ -254,9 +269,11 @@ Retrieve a list of all available PostgreSQL versions.
 ```
 
 #### GET /v1/types/postgres/versions/{uuid}
+
 Retrieve details for a specific PostgreSQL version.
 
 **Response Format:**
+
 ```json
 {
   "uuid": "version-uuid-here",
@@ -269,6 +286,7 @@ Retrieve details for a specific PostgreSQL version.
 ```
 
 #### Version Selection
+
 When creating a PostgreSQL instance, you must specify a version using its UUID:
 
 ```json
@@ -279,6 +297,7 @@ When creating a PostgreSQL instance, you must specify a version using its UUID:
 ```
 
 ### Version Properties
+
 - **UUID**: Unique identifier for the version
 - **Name**: Human-readable version name
 - **Description**: Detailed description of the version
@@ -287,6 +306,7 @@ When creating a PostgreSQL instance, you must specify a version using its UUID:
 - **Updated At**: Timestamp of last update
 
 ### Version Lifecycle
+
 - Versions are managed by the system administrator
 - New versions can be added as PostgreSQL releases are published
 - Deprecated versions may be marked for removal but remain available for existing instances
@@ -295,23 +315,27 @@ When creating a PostgreSQL instance, you must specify a version using its UUID:
 ## API Endpoints
 
 ### Instance Management
+
 - `POST /v1/postgres/instances` - Create new instance
 - `GET /v1/postgres/instances/{uuid}` - Get instance details
 - `PUT /v1/postgres/instances/{uuid}` - Update instance
 - `DELETE /v1/postgres/instances/{uuid}` - Delete instance
 
 ### Database Management
+
 - `POST /v1/postgres/instances/{uuid}/databases` - Create database
 - `GET /v1/postgres/instances/{uuid}/databases` - List databases
 - `GET /v1/postgres/instances/{uuid}/databases/{db_uuid}` - Get database
 - `DELETE /v1/postgres/instances/{uuid}/databases/{db_uuid}` - Delete database
 
 ### User Management
+
 - `POST /v1/postgres/instances/{uuid}/users` - Create user
 - `GET /v1/postgres/instances/{uuid}/users` - List users
 - `GET /v1/postgres/instances/{uuid}/users/{user_uuid}` - Get user
 - `DELETE /v1/postgres/instances/{uuid}/users/{user_uuid}` - Delete user
 
 ### Version Management
+
 - `GET /v1/types/postgres/versions` - List all available versions
 - `GET /v1/types/postgres/versions/{uuid}` - Get specific version details

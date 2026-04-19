@@ -1,6 +1,7 @@
 [Unit]
 Description=Patroni High availability PostgreSQL Cluster
 After=syslog.target network.target
+Wants=watchdog.service
 
 [Service]
 Type=simple

@@ -214,7 +214,6 @@ resources:
 
   $dbaas.types.postgres.instances.$cluster_pg.databases:
     demo_db:
-      uuid: "6bdc9203-bef4-4c63-9476-7d9729c43e7f"
       project_id: "12345678-c625-4fee-81d5-f691897b8142"
       name: demo_db
       owner: $dbaas.types.postgres.instances.$cluster_pg.users.$demo_user:uuid

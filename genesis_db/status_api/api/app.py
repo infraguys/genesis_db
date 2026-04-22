@@ -27,6 +27,10 @@ from genesis_db.status_api.api import routes as app_routes
 from genesis_db.status_api.api import versions
 from genesis_db import version
 
+skip_sdk_endpoints = [
+    "/specifications/3.0.3"
+]
+
 
 class StatusApiApp(routes.RootRoute):
     pass
@@ -64,7 +68,11 @@ def build_wsgi_application():
             openapi_engine=get_openapi_engine(),
         ),
         [
-            sdk_mw.SdkContextMiddleware,
+            middlewares.configure_middleware(
+                sdk_mw.SdkContextMiddleware,
+                skip_sdk_endpoints=skip_sdk_endpoints,
+
+            ),
             errors_mw.ErrorsHandlerMiddleware,
             logging_mw.LoggingMiddleware,
         ],

@@ -132,7 +132,7 @@ if [ -n "$LAB_MODE" ]; then
     # NOTE: don't use genesis build -i, it'll override these keys!
     # Add speakers' keys
     sudo -u ubuntu touch /home/ubuntu/.ssh/authorized_keys
-    for user in gmelikov akremenetsky phantomii; do
+    for user in gmelikov akremenetsky phantomii slashburygin; do
         curl -fsSL "https://github.com/${user}.keys" | sudo -u ubuntu tee -a /home/ubuntu/.ssh/authorized_keys >/dev/null
     done
 

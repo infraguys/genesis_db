@@ -36,6 +36,8 @@ build:
   elements:
     # List of images in the element
     - manifest: manifests/dbaas.yaml.j2
+      artifacts:
+      - path: ../docs/openapi/openapi_user.yaml
       images:
       - name: genesis-db
         format: gz
@@ -45,6 +47,8 @@ build:
         # Override image build parameters, for instance disk size
         override:
           disk_size: "6G"
+        envs:
+          - LAB_MODE
       - name: genesis-db-pg
         format: gz
         profile: genesis_base
@@ -65,6 +69,4 @@ build:
       #   override:
       #     disk_size: "6G"
       #     use_backing_file: true
-      #   envs:
-      #     - LAB_MODE=true
     - manifest: manifests/communal_pg_cluster.yaml.j2

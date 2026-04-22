@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 from restalchemy.dm import filters as dm_filters
 
 
@@ -29,3 +31,10 @@ def remove_nested_dm(dm_class, parent_field_name, parent, session=None, **kwargs
         session=session,
         **kwargs,
     )
+
+def get_project_path() -> str:
+    # Repository path
+    return os.sep.join(__file__.split(os.sep)[:-3])
+
+
+PROJECT_PATH = get_project_path()

@@ -165,6 +165,7 @@ resources:
           IAM_USER_NAME={$core.iam.users.$dbaas_user:username}
           IAM_USER_PASS={$core.secret.passwords.$dbaas_user_password:value}
           PROJECT_ID={$core.iam.projects.$dbaas_project:uuid}
+          GC_HS256_JWKS_ENCRYPTION_KEY={$genesis_ecosystem.imports.$var_hs256_jwks_encryption_key:value}
           "
 
   # DBaaS
@@ -188,6 +189,10 @@ imports:
     element: "$core"
     kind: "resource"
     link: "$core.dns.domains.$local_domain"
+  var_hs256_jwks_encryption_key:
+    element: "$core"
+    kind: "resource"
+    link: "$core.vs.variables.$hs256_jwks_encryption_key"
 
 exports:
   pg18:

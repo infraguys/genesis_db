@@ -27,10 +27,7 @@ from genesis_db.user_api.api import routes as app_routes
 from genesis_db.user_api.api import versions
 from genesis_db import version as app_version
 
-skip_auth_endpoints = [
-    iam_mw.EndpointComparator("/"),
-    iam_mw.EndpointComparator("/v1/"),
-]
+skip_auth_endpoints = []
 
 
 class UserApiApp(routes.RootRoute):
@@ -54,7 +51,7 @@ def get_openapi_engine():
         info=openapi_structures.OpenApiInfo(
             title=f"Genesis Db {versions.API_VERSION_1_0} User API",
             version=app_version.version_info,
-            description=(f"OpenAPI - Genesis Db {versions.API_VERSION_1_0}"),
+            description=f"OpenAPI - Genesis Db {versions.API_VERSION_1_0}",
         ),
         paths=openapi_structures.OpenApiPaths(),
         components=openapi_structures.OpenApiComponents(),

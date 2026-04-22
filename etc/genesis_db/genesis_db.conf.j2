@@ -6,6 +6,7 @@ config = logging.yaml
 
 [iam]
 # token_encryption_algorithm = HS256
+hs256_jwks_decryption_key = {{ GC_HS256_JWKS_ENCRYPTION_KEY }}
 
 [HS256]
 # encryption_key = secret

@@ -32,6 +32,7 @@ source /etc/genesis_init.txt
 export IAM_USER_NAME="${IAM_USER_NAME:-genesis_db}"
 export IAM_USER_PASS="${IAM_USER_PASS:-genesis_db}"
 export PROJECT_ID="${PROJECT_ID}"
+export GC_HS256_JWKS_ENCRYPTION_KEY="${GC_HS256_JWKS_ENCRYPTION_KEY:-}"
 
 export GC_PG_USER="${GC_PG_USER:-genesis_db}"
 export GC_PG_PASS="${GC_PG_PASS:-$(generate_secure_password)}"

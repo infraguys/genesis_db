@@ -79,8 +79,8 @@ sudo apt-get install postgresql-common -y
 sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
 sudo apt-get update
 sudo apt -y install "postgresql-${PG_VERSION}"
-sudo systemctl stop postgresql
-sudo systemctl disable postgresql
+sudo systemctl disable --now "postgresql@${PG_VERSION}-main"
+sudo systemctl disable --now postgresql
 sudo ln -s /usr/lib/postgresql/$PG_VERSION/bin/* /usr/sbin/
 
 # Setup watchdog

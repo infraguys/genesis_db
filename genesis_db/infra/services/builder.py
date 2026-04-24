@@ -66,7 +66,10 @@ bootstrap:
       use_pg_rewind: true
       use_slots: true
       parameters:
+        # archive_mode is 'on' to allow enabling backups without a restart.
+        # archive_command is set to a no-op to prevent WAL accumulation.
         archive_mode: "on"
+        archive_command: ":"
         archive_timeout: 1800s
         wal_log_hints: 'on'
         wal_compression: 'lz4'

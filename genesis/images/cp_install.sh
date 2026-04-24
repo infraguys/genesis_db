@@ -40,8 +40,6 @@ sudo apt install -y \
     postgresql-common \
     libev-dev \
     j2cli
-
-curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME"/.local/bin/env
 
 sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh

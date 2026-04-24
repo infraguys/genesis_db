@@ -39,7 +39,6 @@ sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
     libev-dev yq watchdog
-curl -LsSf https://astral.sh/uv/install.sh | sh
 source "$HOME"/.local/bin/env
 
 # Install genesis core

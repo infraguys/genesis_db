@@ -74,4 +74,7 @@ markdown_extensions:
 
 nav:
   - PostgreSQL: postgresql.md
-
+  - OpenAPI:
+      - User: openapi/openapi_user.md
+      - Orch: openapi/openapi_orch.md
+      - Status: openapi/openapi_status.md

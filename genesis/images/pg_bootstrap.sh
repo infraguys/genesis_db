@@ -20,7 +20,7 @@ set -eu
 set -x
 set -o pipefail
 
-source /opt/genesis_db/genesis/images/lib_bootstrap.sh
+source /usr/local/lib/genesis/lib_bootstrap.sh
 
 # persistent data routines
 PERSISTENT_DISK=$(find_persistent_disk)

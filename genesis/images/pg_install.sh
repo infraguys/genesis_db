@@ -39,7 +39,6 @@ sudo apt update
 sudo apt dist-upgrade -y
 sudo apt install -y \
     libev-dev yq watchdog
-source "$HOME"/.local/bin/env
 
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR

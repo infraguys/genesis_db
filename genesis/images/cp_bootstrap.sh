@@ -20,7 +20,7 @@ set -eu
 set -x
 set -o pipefail
 
-source /opt/genesis_db/genesis/images/lib_bootstrap.sh
+source /usr/local/lib/genesis/lib_bootstrap.sh
 
 GC_PATH="/opt/genesis_db"
 SERVICE_CONFIG="/etc/genesis_db/genesis_db.conf"

@@ -40,7 +40,6 @@ sudo apt install -y \
     postgresql-common \
     libev-dev \
     j2cli
-source "$HOME"/.local/bin/env
 
 sudo YES=1 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
 sudo apt-get update

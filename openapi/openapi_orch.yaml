@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Genesis DB v1 Orch API
+  title: Exordos DB v1 Orch API
   version: latest
-  description: OpenAPI - Genesis DB v1
+  description: OpenAPI - Exordos DB v1
 components:
   responses:
     Error:

@@ -21,9 +21,9 @@ set -x
 set -o pipefail
 
 
-GC_PATH="/opt/genesis_db"
-GC_CFG_DIR=/etc/genesis_db
-WORK_DIR="/var/lib/genesis/genesis_db"
+GC_PATH="/opt/exordos_db"
+GC_CFG_DIR=/etc/exordos_db
+WORK_DIR="/var/lib/exordos/exordos_db"
 VENV_PATH="$GC_PATH/.venv"
 BOOTSTRAP_PATH="/var/lib/genesis/bootstrap/scripts"
 
@@ -43,9 +43,9 @@ sudo apt install -y \
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
 sudo mkdir -p $WORK_DIR
-sudo cp "$GC_PATH/etc/genesis_db/genesis_pg_agent.conf" $GC_CFG_DIR/
-sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
-sudo cp "$GC_PATH/genesis/images/pg_bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
+sudo cp "$GC_PATH/etc/exordos_db/exordos_pg_agent.conf" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/exordos_db/logging.yaml" $GC_CFG_DIR/
+sudo cp "$GC_PATH/genesis/images/pg_bootstrap.sh" $BOOTSTRAP_PATH/0100-ec-bootstrap.sh
 
 cd "$GC_PATH"
 uv sync
@@ -58,15 +58,15 @@ if [[ "$SDK_DEV_MODE" == "true" ]]; then
 fi
 
 # Create links to venv
-sudo ln -sf "$VENV_PATH/bin/genesis-universal-agent" "/usr/bin/genesis-db-pg-agent"
+sudo ln -sf "$VENV_PATH/bin/genesis-universal-agent" "/usr/bin/exordos-db-pg-agent"
 
 deactivate
 
 # Install Systemd service files
-sudo cp "$GC_PATH/etc/systemd/genesis-db-pg-agent.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-db-pg-agent.service" $SYSTEMD_SERVICE_DIR
 
 # Enable genesis db services
-sudo systemctl enable genesis-db-pg-agent
+sudo systemctl enable exordos-db-pg-agent
 
 
 # Patroni
@@ -104,7 +104,7 @@ chmod 770 raft
 EOF
 
 # Install Systemd service files
-sudo cp "$GC_PATH/etc/systemd/genesis-patroni.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-patroni.service" $SYSTEMD_SERVICE_DIR
 
 # Add some usability
 sudo ln -sf "/var/lib/postgresql/patroni/venv/bin/patronictl" "/usr/bin/patronictl"
@@ -157,18 +157,18 @@ PS1="\[\$red\]\$IP\[\$reset\]:\w\$ "
 EOT
 
     cat <<EOT | sudo tee /etc/motd
-▄▖        ▘    ▄▖
-▌ █▌▛▌█▌▛▘▌▛▘  ▌ ▛▌▛▘█▌
-▙▌▙▖▌▌▙▖▄▌▌▄▌  ▙▖▙▌▌ ▙▖
+▄▖       ▌      ▄▖
+▙▖▚▘▛▌▛▘▛▌▛▌▛▘  ▌ ▛▌▛▘█▌
+▙▖▞▖▙▌▌ ▙▌▙▌▄▌  ▙▖▙▌▌ ▙▖
 
 
-Welcome to Genesis DBaaS virtual machine!
+Welcome to Exordos DBaaS virtual machine!
 
 If you see this - you'll be treated as the expert, so:
 "With great power comes great responsibility".
 
 All materials can be found here:
-https://github.com/infraguys/genesis_db
+https://github.com/infraguys/exordos_db
 
 Support chat:
 https://t.me/infraguys_support

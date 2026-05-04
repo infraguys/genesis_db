@@ -1,5 +1,5 @@
 name: "dbaas"
-description: "Genesis DBaaS element"
+description: "Exordos DBaaS element"
 schema_version: 1
 version: "{{ version }}"
 api_version: "v1"
@@ -28,31 +28,31 @@ resources:
 
   $core.iam.permissions:
     pg_instance_create:
-      name: "genesis_db.pg_instance.create"
+      name: "exordos_db.pg_instance.create"
     pg_instance_read:
-      name: "genesis_db.pg_instance.read"
+      name: "exordos_db.pg_instance.read"
     pg_instance_update:
-      name: "genesis_db.pg_instance.update"
+      name: "exordos_db.pg_instance.update"
     pg_instance_delete:
-      name: "genesis_db.pg_instance.delete"
+      name: "exordos_db.pg_instance.delete"
     database_create:
-      name: "genesis_db.database.create"
+      name: "exordos_db.database.create"
     database_read:
-      name: "genesis_db.database.read"
+      name: "exordos_db.database.read"
     database_update:
-      name: "genesis_db.database.update"
+      name: "exordos_db.database.update"
     database_delete:
-      name: "genesis_db.database.delete"
+      name: "exordos_db.database.delete"
     user_create:
-      name: "genesis_db.user.create"
+      name: "exordos_db.user.create"
     user_read:
-      name: "genesis_db.user.read"
+      name: "exordos_db.user.read"
     user_update:
-      name: "genesis_db.user.update"
+      name: "exordos_db.user.update"
     user_delete:
-      name: "genesis_db.user.delete"
+      name: "exordos_db.user.delete"
     pg_version_read:
-      name: "genesis_db.pg_version.read"
+      name: "exordos_db.pg_version.read"
 
   $core.iam.permissionbinding:
     pg_instance_create_binding:
@@ -154,7 +154,7 @@ resources:
   $core.config.configs:
     dbaas_cp_config:
       project_id: "12345678-c625-4fee-81d5-f691897b8142"
-      path: /etc/genesis_init.txt
+      path: /etc/exordos_init.txt
       target:
         kind: node
         node: $core.compute.nodes.$dbaas_cp:uuid

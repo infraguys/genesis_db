@@ -39,6 +39,6 @@ fi
 
 # Enable genesis db services
 sudo systemctl enable --now \
-    genesis-patroni
+    exordos-patroni
 
 echo "Bootstrap completed successfully."

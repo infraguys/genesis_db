@@ -19,9 +19,9 @@ build:
 
   # Dependencies of the project
   deps:
-    - dst: /opt/genesis_db
+    - dst: /opt/exordos_db
       path:
-        src: ../../genesis_db
+        src: ../../exordos_db
       exclude:
         - .venv
         - .tox
@@ -39,7 +39,7 @@ build:
       artifacts:
       - path: ../docs/openapi/openapi_user.yaml
       images:
-      - name: genesis-db
+      - name: exordos-db
         format: gz
         profile: genesis_base
         script: images/cp_install.sh
@@ -49,7 +49,7 @@ build:
           disk_size: "6G"
         envs:
           - LAB_MODE
-      - name: genesis-db-pg
+      - name: exordos-db-pg
         format: gz
         profile: genesis_base
         script: images/pg_install.sh
@@ -60,7 +60,7 @@ build:
           use_backing_file: true
         envs:
           - LAB_MODE
-      # - name: genesis-db-pg-lab
+      # - name: exordos-db-pg-lab
       #   format: gz
       #   profile: genesis_base
       #   script: images/pg_install.sh

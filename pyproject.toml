@@ -51,7 +51,7 @@ test = [
     "pytest>=8.0.0,<10.0.0",
     "pytest-xdist[psutil]>=3.8.0,<4.0.0",  # MIT License (MIT)
     "pytest-timer>=1.0.0,<2.0.0",  # MIT License (MIT)
-    "ruamel-yaml==0.17.26",
+    "ruamel-yaml==0.19.1",
 ]
 mypy = [
     "mypy",

@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 30
-      - name: Build Genesis DB
+      - name: Build Exordos DB
         env:
             PUSH_CFG: ${{ secrets.PUSH_CFG }}
         run: |

@@ -1,0 +1,42 @@
+[db]
+connection_url = postgresql://{{ GC_PG_USER }}:{{ GC_PG_PASS }}@localhost:5432/{{ GC_PG_DB }}
+
+[logging]
+config = logging.yaml
+
+[iam]
+# token_encryption_algorithm = HS256
+hs256_jwks_decryption_key = {{ GC_HS256_JWKS_ENCRYPTION_KEY }}
+
+[HS256]
+# encryption_key = secret
+
+[user_api]
+bind_host = 0.0.0.0
+
+[status_api]
+bind_host = 0.0.0.0
+
+[orch_api]
+bind_host = 0.0.0.0
+
+[launchpad]
+common_initializer = exordos_db.cmd.gservice:init_common_conf
+services =
+    exordos_db.infra.services.builder:CoreInfraBuilder,
+    exordos_db.services.gservice:InfraScheduler,
+    exordos_db.services.gservice:UAgent,
+    exordos_db.paas.services.builder:PGInstanceBuilder
+
+[exordos_db.infra.services.builder:CoreInfraBuilder]
+core_username = {{ IAM_USER_NAME }}
+core_password = {{ IAM_USER_PASS }}
+project_id = {{ PROJECT_ID }}
+
+[exordos_db.services.gservice:InfraScheduler]
+capabilities = node_set,config
+
+[exordos_db.services.gservice:UAgent]
+core_username = {{ IAM_USER_NAME }}
+core_password = {{ IAM_USER_PASS }}
+project_id = {{ PROJECT_ID }}

@@ -1,9 +1,9 @@
 {
     "project": {
-        "name": "genesis_db",
-        "package_name": "genesis_db",
+        "name": "exordos_db",
+        "package_name": "exordos_db",
         "description": "Database as a Service",
-        "summary": "DBaaS for Genesis Core"
+        "summary": "DBaaS for Exordos Core"
     },
     "author": {
         "name": "Genesis Corporation",

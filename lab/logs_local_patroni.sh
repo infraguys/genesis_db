@@ -3,4 +3,4 @@
 set -ue
 set -o pipefail
 
-sudo journalctl -xu genesis-patroni -n 100 -f
+sudo journalctl -xu exordos-patroni -n 100 -f

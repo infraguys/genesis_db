@@ -1,0 +1,14 @@
+[Unit]
+Description=Exordos Database PG agent
+After=network-online.target
+
+[Service]
+TimeoutStopSec=5
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGINT
+ExecStartPre=/bin/sleep 2
+ExecStart=exordos-db-pg-agent --config-file /etc/exordos_db/exordos_pg_agent.conf
+
+[Install]
+WantedBy=multi-user.target

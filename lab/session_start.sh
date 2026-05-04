@@ -29,7 +29,7 @@ readarray servers_map < <(yq -r .raft.partner_addrs[] /var/lib/postgresql/patron
 start_tab=1
 for server in "${servers_map[@]}"; do
     server=${server%$'\n'}
-    tmux send-keys -t $start_tab "ssh -i .ssh/lab -o StrictHostKeyChecking=no ubuntu@${server} -t 'sudo journalctl -xu genesis-patroni -n 100 -f; bash -l'" Enter
+    tmux send-keys -t $start_tab "ssh -i .ssh/lab -o StrictHostKeyChecking=no ubuntu@${server} -t 'sudo journalctl -xu exordos-patroni -n 100 -f; bash -l'" Enter
     (( start_tab+=1 ))
 done
 

@@ -1,6 +1,6 @@
 [project]
-name = "genesis_db"
-description = "DBaaS for Genesis Core"
+name = "exordos_db"
+description = "DBaaS for Exordos Core"
 readme = "README.md"
 authors = [{name = "Genesis Corporation", email = "mail@gmelikov.ru"}]
 dynamic = ["version"]
@@ -28,7 +28,7 @@ dependencies = [
     "PyYAML>=6.0.0,<7.0.0",  # MIT
 ]
 [project.urls]
-homepage = "https://github.com/infraguys/genesis_db/"
+homepage = "https://github.com/infraguys/exordos_db/"
 
 [build-system]
 requires = [
@@ -127,14 +127,14 @@ line-ending = "auto"
 where = ["."]
 
 [project.scripts]
-genesis-db-user-api = "genesis_db.cmd.user_api:main"
-genesis-db-gservice = "genesis_db.cmd.gservice:main"
-genesis-db-status-api = "genesis_db.cmd.status_api:main"
-genesis-db-orch-api = "genesis_db.cmd.orch_api:main"
-genesis-db-bootstrap = "genesis_db.cmd.bootstrap:main"
+exordos-db-user-api = "exordos_db.cmd.user_api:main"
+exordos-db-gservice = "exordos_db.cmd.gservice:main"
+exordos-db-status-api = "exordos_db.cmd.status_api:main"
+exordos-db-orch-api = "exordos_db.cmd.orch_api:main"
+exordos-db-bootstrap = "exordos_db.cmd.bootstrap:main"
 
 [project.entry-points."gcl_sdk_universal_agent"]
-PGCapabilityDriver = "genesis_db.agent.universal.drivers.pg:PGCapabilityDriver"
+PGCapabilityDriver = "exordos_db.agent.universal.drivers.pg:PGCapabilityDriver"
 
 [tool.uv]
 package = true
@@ -142,7 +142,7 @@ package = true
 [tool.mypy]
 exclude = [
     '.venv',
-    'genesis_db/tests',
+    'exordos_db/tests',
 ]
 python_version = "3.12"
 disallow_untyped_defs = true
@@ -153,16 +153,16 @@ warn_unused_ignores = true
 ignore_missing_imports = true
 
 [tool.setuptools.package-data]
-genesis_db = ["*.yaml", "*.md"]
+exordos_db = ["*.yaml", "*.md"]
 
 [tool.coverage.run]
 branch = true
 source = [
-    "genesis_db"
+    "exordos_db"
 ]
-command_line = "-m pytest -s genesis_db/tests/unit"
+command_line = "-m pytest -s exordos_db/tests/unit"
 omit = [
-    "genesis_db/tests/*",
+    "exordos_db/tests/*",
     ".venv",
     "memory:0x"
 ]

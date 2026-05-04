@@ -21,8 +21,8 @@ set -x
 set -o pipefail
 
 
-GC_PATH="/opt/genesis_db"
-GC_CFG_DIR=/etc/genesis_db
+GC_PATH="/opt/exordos_db"
+GC_CFG_DIR=/etc/exordos_db
 VENV_PATH="$GC_PATH/.venv"
 BOOTSTRAP_PATH="/var/lib/genesis/bootstrap/scripts"
 
@@ -51,9 +51,9 @@ sudo systemctl disable --now "postgresql"
 
 # Install genesis core
 sudo mkdir -p $GC_CFG_DIR
-sudo cp "$GC_PATH/etc/genesis_db/genesis_db.conf.j2" $GC_CFG_DIR/
-sudo cp "$GC_PATH/etc/genesis_db/core_agent.conf.j2" $GC_CFG_DIR/
-sudo cp "$GC_PATH/etc/genesis_db/logging.yaml" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/exordos_db/exordos_db.conf.j2" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/exordos_db/core_agent.conf.j2" $GC_CFG_DIR/
+sudo cp "$GC_PATH/etc/exordos_db/logging.yaml" $GC_CFG_DIR/
 sudo cp "$GC_PATH/genesis/images/cp_bootstrap.sh" $BOOTSTRAP_PATH/0100-gc-bootstrap.sh
 
 cd "$GC_PATH"
@@ -68,15 +68,15 @@ fi
 deactivate
 
 # Create links to venv
-sudo ln -sf "$VENV_PATH/bin/genesis-db-gservice" "/usr/bin/genesis-db-gservice"
-sudo ln -sf "$VENV_PATH/bin/genesis-db-user-api" "/usr/bin/genesis-db-user-api"
-sudo ln -sf "$VENV_PATH/bin/genesis-db-status-api" "/usr/bin/genesis-db-status-api"
-sudo ln -sf "$VENV_PATH/bin/genesis-db-orch-api" "/usr/bin/genesis-db-orch-api"
+sudo ln -sf "$VENV_PATH/bin/exordos-db-gservice" "/usr/bin/exordos-db-gservice"
+sudo ln -sf "$VENV_PATH/bin/exordos-db-user-api" "/usr/bin/exordos-db-user-api"
+sudo ln -sf "$VENV_PATH/bin/exordos-db-status-api" "/usr/bin/exordos-db-status-api"
+sudo ln -sf "$VENV_PATH/bin/exordos-db-orch-api" "/usr/bin/exordos-db-orch-api"
 sudo ln -sf "$VENV_PATH/bin/genesis-universal-agent-db-back" "/usr/bin/genesis-universal-agent-db-back"
 
 # Install Systemd service files
-sudo cp "$GC_PATH/etc/systemd/genesis-db-gservice.service" $SYSTEMD_SERVICE_DIR
-sudo cp "$GC_PATH/etc/systemd/genesis-db-user-api.service" $SYSTEMD_SERVICE_DIR
-sudo cp "$GC_PATH/etc/systemd/genesis-db-status-api.service" $SYSTEMD_SERVICE_DIR
-sudo cp "$GC_PATH/etc/systemd/genesis-db-orch-api.service" $SYSTEMD_SERVICE_DIR
-sudo cp "$GC_PATH/etc/systemd/genesis-db-core-agent.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-db-gservice.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-db-user-api.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-db-status-api.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-db-orch-api.service" $SYSTEMD_SERVICE_DIR
+sudo cp "$GC_PATH/etc/systemd/exordos-db-core-agent.service" $SYSTEMD_SERVICE_DIR

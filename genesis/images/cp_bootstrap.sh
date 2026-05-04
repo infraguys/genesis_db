@@ -22,21 +22,21 @@ set -o pipefail
 
 source /usr/local/lib/genesis/lib_bootstrap.sh
 
-GC_PATH="/opt/genesis_db"
-SERVICE_CONFIG="/etc/genesis_db/genesis_db.conf"
-CORE_AGENT_CONFIG="/etc/genesis_db/core_agent.conf"
+GC_PATH="/opt/exordos_db"
+SERVICE_CONFIG="/etc/exordos_db/exordos_db.conf"
+CORE_AGENT_CONFIG="/etc/exordos_db/core_agent.conf"
 
-while [ ! -f /etc/genesis_init.txt ]; do sleep 1; done
-source /etc/genesis_init.txt
+while [ ! -f /etc/exordos_init.txt ]; do sleep 1; done
+source /etc/exordos_init.txt
 
-export IAM_USER_NAME="${IAM_USER_NAME:-genesis_db}"
-export IAM_USER_PASS="${IAM_USER_PASS:-genesis_db}"
+export IAM_USER_NAME="${IAM_USER_NAME:-exordos_db}"
+export IAM_USER_PASS="${IAM_USER_PASS:-exordos_db}"
 export PROJECT_ID="${PROJECT_ID}"
 export GC_HS256_JWKS_ENCRYPTION_KEY="${GC_HS256_JWKS_ENCRYPTION_KEY:-}"
 
-export GC_PG_USER="${GC_PG_USER:-genesis_db}"
+export GC_PG_USER="${GC_PG_USER:-exordos_db}"
 export GC_PG_PASS="${GC_PG_PASS:-$(generate_secure_password)}"
-export GC_PG_DB="${GC_PG_DB:-genesis_db}"
+export GC_PG_DB="${GC_PG_DB:-exordos_db}"
 
 # persistent data routines
 PERSISTENT_DISK=$(find_persistent_disk)
@@ -50,7 +50,8 @@ if [[ -n "$PERSISTENT_DISK" ]]; then
     cp /var/lib/genesis/universal_agent/private_key /root/private_key
     migrate_to_persistent_stop_start "/var/lib/genesis" "${PERSISTENT_MOUNT}/var/lib/genesis" "genesis-universal-agent"
     mv -f /root/private_key /var/lib/genesis/universal_agent/private_key
-    migrate_to_persistent "/etc/genesis_db" "${PERSISTENT_MOUNT}/etc/genesis_db"
+    migrate_to_persistent "/var/lib/exordos" "${PERSISTENT_MOUNT}/var/lib/exordos"
+    migrate_to_persistent "/etc/exordos_db" "${PERSISTENT_MOUNT}/etc/exordos_db"
 
     persist_migrate_complete
 fi
@@ -63,16 +64,16 @@ if [[ ! -f $SERVICE_CONFIG ]]; then
 fi
 
 source "$GC_PATH"/.venv/bin/activate
-ra-apply-migration --config-dir "/etc/genesis_db/" --path ""$GC_PATH"/.venv/lib/python3.12/site-packages/gcl_sdk/migrations"
-ra-apply-migration --config-dir "/etc/genesis_db/" --path "$GC_PATH/migrations"
+ra-apply-migration --config-dir "/etc/exordos_db/" --path ""$GC_PATH"/.venv/lib/python3.12/site-packages/gcl_sdk/migrations"
+ra-apply-migration --config-dir "/etc/exordos_db/" --path "$GC_PATH/migrations"
 deactivate
 
 # Enable genesis db services
 sudo systemctl enable --now \
-    genesis-db-gservice \
-    genesis-db-user-api \
-    genesis-db-status-api \
-    genesis-db-orch-api \
-    genesis-db-core-agent
+    exordos-db-gservice \
+    exordos-db-user-api \
+    exordos-db-status-api \
+    exordos-db-orch-api \
+    exordos-db-core-agent
 
 echo "Bootstrap completed successfully."

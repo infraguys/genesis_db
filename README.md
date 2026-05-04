@@ -1,8 +1,8 @@
-# Genesis DBaaS
+# Exordos DBaaS
 
 ## Overview
 
-Genesis is a Database as a Service (DBaaS) platform with different DBs support. It provides scalable, managed database services for modern applications.
+Exordos is a Database as a Service (DBaaS) platform with different DBs support. It provides scalable, managed database services for modern applications.
 
 ## Key Features
 

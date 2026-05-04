@@ -1,7 +1,7 @@
-site_name: genesis_db
+site_name: exordos_db
 site_url: https://github.com/infraguys/
-repo_name: genesis_db
-repo_url: https://github.com/infraguys/genesis_db
+repo_name: exordos_db
+repo_url: https://github.com/infraguys/exordos_db
 edit_uri: browse/docs/
 
 theme:

@@ -69,11 +69,18 @@ class PGInstanceNode(
         )
 
 
+class NodeSet(
+    sdk_models.NodeSet,
+    ra_models.ModelWithTags,
+):
+    pass
+
+
 class PGInstance(
     models.PGInstance,
     ua_models.InstanceWithDerivativesMixin,
 ):
-    __master_model__ = sdk_models.NodeSet
+    __master_model__ = NodeSet
     __derivative_model_map__ = {
         "pg_instance_node": PGInstanceNode,
     }

@@ -185,7 +185,52 @@ resources:
         name: "dbaas-cp"
         address: "$core.compute.nodes.$dbaas_cp:default_network:ipv4"
 
+  # Core LB endpoint
+
+  $dbaas.imports.$core_lb.backend_pools:
+    core_lb_dbaas_backend_http:
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      parent: $dbaas.imports.$core_lb:uuid
+      endpoints:
+        - kind: host
+          host: $core.compute.nodes.$dbaas_cp:default_network:ipv4
+          port: 8080
+          weight: 1
+  $dbaas.imports.$core_lb_http_vhost.routes:
+    core_lb_dbaas_route:
+      project_id: "12345678-c625-4fee-81d5-f691897b8142"
+      parent: $dbaas.imports.$core_lb_http_vhost:uuid
+      condition:
+        kind: prefix
+        value: /api/dbaas/
+        allowed_ips:
+          - 0.0.0.0/0
+        actions:
+          - kind: backend
+            pool: $core.network.lb.$core_lb.backend_pools.$core_lb_dbaas_backend_http:uuid
+            protocol:
+              kind: http
+        modifiers:
+          - kind: auto_header
+            headers:
+              - 'Host'
+              - 'X-Forwarded-For'
+              - 'X-Forwarded-Port'
+              - 'X-Forwarded-Proto'
+              - 'X-Forwarded-Prefix'
+          - kind: rewrite_url
+            regex: "^/api/dbaas/(.*)"
+            replacement: "/$1"
+
 imports:
+  core_lb:
+    element: "$core"
+    kind: "resource"
+    link: "$core.network.lb.$core_lb"
+  core_lb_http_vhost:
+    element: "$core"
+    kind: "resource"
+    link: "$core.network.lb.$core_lb.vhosts.$core_lb_core_http"
   core_local_domain:
     element: "$core"
     kind: "resource"
@@ -202,3 +247,7 @@ imports:
 exports:
   pg18:
     link: "$dbaas.types.postgres.versions.$pg18"
+  dbaas_organization:
+    link: "$core.iam.organizations.$dbaas_organization"
+  dbaas_project:
+    link: "$core.iam.projects.$dbaas_project"

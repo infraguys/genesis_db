@@ -22,13 +22,13 @@ from exordos_db import version
 from exordos_db.common import constants
 
 GLOBAL_SERVICE_NAME = constants.GLOBAL_SERVICE_NAME
+LOG = logging.getLogger(__name__)
 
 
 _CONFIG_NOT_FOUND_MESSAGE = (
     "Unable to find configuration file in the"
-    " default search paths (~/.%(service_name)s/, ~/,"
-    " /etc/%(service_name)s/, /etc/) and the '--config-file' option!"
-    % {"service_name": GLOBAL_SERVICE_NAME}
+    f" default search paths (~/.{GLOBAL_SERVICE_NAME}/, ~/,"
+    f" /etc/{GLOBAL_SERVICE_NAME}/, /etc/) and the '--config-file' option!"
 )
 
 
@@ -36,12 +36,8 @@ def parse(args):
     cfg.CONF(
         args=args,
         project=GLOBAL_SERVICE_NAME,
-        version="%s %s"
-        % (
-            GLOBAL_SERVICE_NAME.capitalize(),
-            version.version_info,
-        ),
+        version=f"{GLOBAL_SERVICE_NAME.capitalize()} {version.version_info}",
     )
     if not cfg.CONF.config_file:
-        logging.warning(_CONFIG_NOT_FOUND_MESSAGE)
+        LOG.warning(_CONFIG_NOT_FOUND_MESSAGE)
     return cfg.CONF.config_file

@@ -146,7 +146,7 @@ class CoreInfraBuilder(builder.CoreInfraBuilder, oslo_base.OsloConfigurableServi
         core_password,
         core_api_base_url,
         project_id: sys_uuid.UUID,
-        instance_model: tp.Type[models.PGInstance] = models.PGInstance,
+        instance_model: type[models.PGInstance] = models.PGInstance,
     ):
         super().__init__(instance_model)
         self._project_id = project_id

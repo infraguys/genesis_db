@@ -82,7 +82,7 @@ def main():
             wsgi_app=app.build_wsgi_application(iam_driver),
             host=CONF[DOMAIN].bind_host,
             port=CONF[DOMAIN].bind_port,
-            bjoern_kwargs=dict(reuse_port=True),
+            bjoern_kwargs={"reuse_port": True},
         )
 
         service.add_setup(

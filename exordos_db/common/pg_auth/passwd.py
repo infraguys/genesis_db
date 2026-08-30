@@ -60,7 +60,7 @@ def verify_password(role, password, verifier, method="scram-sha-256"):
 
 def _md5_password(role, password):
     return "md5{}".format(
-        hashlib.md5(f"{password}{role}".encode("utf-8")).hexdigest()  # nosec
+        hashlib.md5(f"{password}{role}".encode()).hexdigest()  # nosec
     )
 
 

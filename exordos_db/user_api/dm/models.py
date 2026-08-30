@@ -77,7 +77,7 @@ class PGInstance(
     )
     ipsv4 = properties.property(
         types.TypedList(types.String(max_length=15)),
-        default=lambda: [],
+        default=list,
     )
     cpu = properties.property(types.Integer(min_value=1, max_value=128))
     ram = properties.property(types.Integer(min_value=512, max_value=1024**3))

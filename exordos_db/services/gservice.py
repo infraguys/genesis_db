@@ -42,7 +42,7 @@ class InfraScheduler(
         return [
             cfg.ListOpt(
                 "capabilities",
-                default=tuple(),
+                default=(),
                 help=("List of capabilities to run."),
             )
         ]
@@ -76,7 +76,7 @@ class UAgent(agent_service.UniversalAgentService, oslo_base.OsloConfigurableServ
 
         facts_drivers = []
         payload_path = os.path.join(cc.WORK_DIR, "infra_agent_payload.json")
-        return super().__init__(
+        super().__init__(
             *args,
             agent_uuid=agent_uuid,
             orch_client=orch_client,

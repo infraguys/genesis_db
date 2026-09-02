@@ -38,6 +38,7 @@ build:
     - manifest: manifests/dbaas.yaml.j2
       artifacts:
       - path: ../docs/openapi/openapi_user.yaml
+      - path: artifacts/icon.jpg
       images:
       - name: exordos-db
         format: zst

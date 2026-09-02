@@ -31,6 +31,17 @@ build:
       optional: true
       path:
         env: LOCAL_GENESIS_SDK_PATH
+      # A developer checkout carries its virtualenvs, and agent scaffolding
+      # keeps whole checkouts of its own under `.claude`. Uploading those
+      # fills the build disk before the image is provisioned -- the failure
+      # is `scp: ... Disk quota exceeded`, naming a file in `.tox`.
+      exclude:
+        - .git
+        - .venv
+        - .tox
+        - .claude
+        - build
+        - dist
 
   # List of elements in the project
   elements:

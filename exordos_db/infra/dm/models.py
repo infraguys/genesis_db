@@ -20,17 +20,30 @@ import uuid as sys_uuid
 from gcl_sdk.agents.universal.dm import models as ua_models
 from gcl_sdk.infra import constants as sdk_c
 from gcl_sdk.infra.dm import models as sdk_models
+from restalchemy.dm import models as ra_models
 
 from exordos_db.user_api.dm import models
 
 ROOT_DISK_SIZE = 6
 
 
+class NodeSet(sdk_models.NodeSet, ra_models.ModelWithTags):
+    pass
+
+
+class Node(sdk_models.Node, ra_models.ModelWithTags):
+    pass
+
+
+class Config(sdk_models.Config, ra_models.ModelWithTags):
+    pass
+
+
 class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
     __derivative_model_map__ = {
-        "node_set": sdk_models.NodeSet,
-        "node": sdk_models.Node,
-        "config": sdk_models.Config,
+        "node_set": NodeSet,
+        "node": Node,
+        "config": Config,
     }
 
     @classmethod
@@ -62,7 +75,7 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
     )
 
     def _create_config(self, node_uuid, project_id, content=""):
-        config = sdk_models.Config(
+        config = Config(
             uuid=sys_uuid.uuid5(self.uuid, f"config-{node_uuid}"),
             name=str(node_uuid),
             project_id=project_id,
@@ -89,7 +102,7 @@ class PGInstance(models.PGInstance, ua_models.InstanceWithDerivativesMixin):
         """Return the infrastructure objects."""
         infra_objects = []
 
-        node_set = sdk_models.NodeSet(
+        node_set = NodeSet(
             uuid=self.uuid,
             name=f"dbaas-dp-{self.uuid}",
             cores=self.cpu,

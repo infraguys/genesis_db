@@ -59,7 +59,7 @@ class PaaSBuilder(builder.PaaSBuilder):
 class PGInstanceBuilder(PaaSBuilder, oslo_base.OsloConfigurableService):
     def __init__(
         self,
-        instance_model: tp.Type[models.PGInstance] = models.PGInstance,
+        instance_model: type[models.PGInstance] = models.PGInstance,
     ):
         super().__init__(instance_model)
 
@@ -85,7 +85,7 @@ class PGInstanceBuilder(PaaSBuilder, oslo_base.OsloConfigurableService):
         """
 
         return self.actualize_paas_objects(
-            instance, builder.PaaSCollection(paas_objects=tuple())
+            instance, builder.PaaSCollection(paas_objects=())
         )
 
     def actualize_paas_objects(

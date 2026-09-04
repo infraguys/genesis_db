@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import typing as tp
+
 from restalchemy.api import routes
 
 from exordos_db.user_api.api import controllers
@@ -42,7 +44,7 @@ class PGVersionRoute(routes.Route):
 
 class PGRoute(routes.Route):
     __controller__ = controllers.PGController
-    __allow_methods__ = [routes.FILTER]
+    __allow_methods__: tp.ClassVar[list] = [routes.FILTER]
 
     # route to /v1/types/postgres/instances/[<uuid>]
     instances = routes.route(PGInstanceRoute)
@@ -55,7 +57,7 @@ class TypeRoute(routes.Route):
     """Handler for /v1/types/ endpoint"""
 
     __controller__ = controllers.TypeController
-    __allow_methods__ = [routes.FILTER]
+    __allow_methods__: tp.ClassVar[list] = [routes.FILTER]
 
     # route to /v1/types/postgres/
     postgres = routes.route(PGRoute)
@@ -65,6 +67,6 @@ class ApiEndpointRoute(routes.Route):
     """Handler for /v1/ endpoint"""
 
     __controller__ = controllers.ApiEndpointController
-    __allow_methods__ = [routes.FILTER]
+    __allow_methods__: tp.ClassVar[list] = [routes.FILTER]
 
     types = routes.route(TypeRoute)

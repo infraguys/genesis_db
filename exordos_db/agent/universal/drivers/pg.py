@@ -15,10 +15,10 @@
 #    under the License.
 from __future__ import annotations
 
-from functools import lru_cache
 from functools import wraps
 import logging
 import time
+import typing as tp
 
 from gcl_sdk.agents.universal.drivers import meta
 from gcl_sdk.infra import constants as pc
@@ -56,6 +56,7 @@ class PatroniClient:
         creds = self._config["restapi"]["authentication"]
         # TODO: check for config changes?
         self._client.auth = HTTPBasicAuth(creds["username"], creds["password"])
+        self._primary_cache: tuple[int | None, bool] | None = None
 
     def _load_config(self):
         with open(constants.PATRONI_CONFIG_FILE, "r") as file:
@@ -65,10 +66,13 @@ class PatroniClient:
     def get_full_state(self):
         return self._client.get(f"{self._endpoint}/").json()
 
-    @lru_cache()
-    def is_primary(self, ttl_hash=None):
-        del ttl_hash
-        return self._client.get(f"{self._endpoint}/primary").status_code == 200
+    def is_primary(self, ttl_hash: int | None = None) -> bool:
+        if self._primary_cache is None or self._primary_cache[0] != ttl_hash:
+            self._primary_cache = (
+                ttl_hash,
+                self._client.get(f"{self._endpoint}/primary").status_code == 200,
+            )
+        return self._primary_cache[1]
 
     def config_get(self):
         response = self._client.get(f"{self._endpoint}/config")
@@ -132,7 +136,7 @@ class PGInstance(meta.MetaDataPlaneModel):
         default=pc.InstanceStatus.ACTIVE.value,
     )
 
-    _meta_fields = {"uuid", "name", "nodes_number"}
+    _meta_fields: tp.ClassVar[set[str]] = {"uuid", "name", "nodes_number"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -311,7 +315,7 @@ class PGCapabilityDriver(meta.MetaFileStorageAgentDriver):
 
     PG_META_PATH = "/var/lib/exordos/exordos_db/pg_meta.json"
 
-    __model_map__ = {
+    __model_map__: tp.ClassVar[dict[str, type]] = {
         "pg_instance_node": PGInstance,
     }
 

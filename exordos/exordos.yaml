@@ -39,6 +39,8 @@ build:
       artifacts:
       - path: ../docs/openapi/openapi_user.yaml
       - path: artifacts/icon.jpg
+      - path: artifacts/preview-1.jpg
+      - path: artifacts/preview-2.jpg
       images:
       - name: exordos-db
         format: zst

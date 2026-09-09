@@ -107,18 +107,15 @@ class UAgent(agent_service.UniversalAgentService, oslo_base.OsloConfigurableServ
         super()._setup()
 
     @staticmethod
-    def _read_private_key() -> str | None:
-        """Return the key deployed on this host, None if there is none."""
-        try:
-            with open(ua_c.PRIVATE_KEY_PATH) as f:
-                return f.read().strip()
-        except OSError:
-            LOG.warning(
-                "No private key at %s, provisioning a generated node "
-                "encryption key instead.",
-                ua_c.PRIVATE_KEY_PATH,
-            )
-            return None
+    def _read_private_key() -> str:
+        """Return the key deployed on this host.
+
+        A missing key file means the host was never provisioned with
+        one, so any key put in the DB would differ from what the CP
+        host encrypts with - fail loudly instead.
+        """
+        with open(ua_c.PRIVATE_KEY_PATH) as f:
+            return f.read().strip()
 
     @classmethod
     def svc_get_config_opts(cls) -> tp.Collection[cfg.Opt]:

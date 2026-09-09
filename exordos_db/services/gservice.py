@@ -83,6 +83,11 @@ class UAgent(agent_service.UniversalAgentService, oslo_base.OsloConfigurableServ
             caps_drivers=caps_drivers,
             facts_drivers=facts_drivers,
             payload_path=payload_path,
+            # This agent registers itself into its own local database, not
+            # a remote one core doesn't already trust -- the node-existence
+            # check that flag guards is meaningless here and nothing seeds
+            # a NodeEncryptionKey for this node's own uuid to satisfy it.
+            verify_node_on_register=False,
             **kwargs,
         )
 

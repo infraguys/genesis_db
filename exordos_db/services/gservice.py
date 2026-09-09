@@ -20,6 +20,7 @@ import os
 import typing as tp
 
 from gcl_looper.services.oslo import base as oslo_base
+from gcl_sdk.agents.universal import constants as ua_c
 from gcl_sdk.agents.universal import utils as ua_utils
 from gcl_sdk.agents.universal.clients.orch import db as orch_db
 from gcl_sdk.agents.universal.dm import models as ua_models
@@ -93,13 +94,31 @@ class UAgent(agent_service.UniversalAgentService, oslo_base.OsloConfigurableServ
         # node has an encryption key. The CP host is not a managed node,
         # so nothing mirrors a key for it from Core the way
         # CoreInfraBuilder does for the PG instance nodes - provision one
-        # here so registration can go through.
+        # here so registration can go through. Seed it with the key
+        # already deployed on this host, otherwise the DB copy would
+        # differ from the one the CP host encrypts with.
         with contexts.Context().session_manager() as session:
             ua_models.NodeEncryptionKey.get_or_create(
-                ua_utils.system_uuid(), session=session
+                ua_utils.system_uuid(),
+                private_key=self._read_private_key(),
+                session=session,
             )
 
         super()._setup()
+
+    @staticmethod
+    def _read_private_key() -> str | None:
+        """Return the key deployed on this host, None if there is none."""
+        try:
+            with open(ua_c.PRIVATE_KEY_PATH) as f:
+                return f.read().strip()
+        except OSError:
+            LOG.warning(
+                "No private key at %s, provisioning a generated node "
+                "encryption key instead.",
+                ua_c.PRIVATE_KEY_PATH,
+            )
+            return None
 
     @classmethod
     def svc_get_config_opts(cls) -> tp.Collection[cfg.Opt]:
